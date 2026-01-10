@@ -1631,15 +1631,18 @@ class _ImageCarouselState extends State<_ImageCarousel> {
                       ),
                     ),
                     child: Center(
-                      child: CachedNetworkImage(
-                        imageUrl: widget.imageUrls[index],
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        placeholder: (context, url) =>
-                            const _ShimmerBox(height: double.infinity),
-                        errorWidget: (context, url, err) =>
-                            const SocialErrorPlaceholder(),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20.w),
+                        child: CachedNetworkImage(
+                          imageUrl: widget.imageUrls[index],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          placeholder: (context, url) =>
+                              const _ShimmerBox(height: double.infinity),
+                          errorWidget: (context, url, err) =>
+                              const SocialErrorPlaceholder(),
+                        ),
                       ),
                     ),
                   ),

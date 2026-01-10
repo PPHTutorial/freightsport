@@ -96,81 +96,86 @@ class VendorStoreScreen extends ConsumerWidget {
           SliverAppBar(
             pinned: true,
             expandedHeight: 200,
-            automaticallyImplyLeading: true,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.message_rounded, color: Colors.white),
-                onPressed: () => context.push('/social/chat/${v.id}'),
-                tooltip: 'Chat',
-              ),
-              IconButton(
-                icon: const FaIcon(
-                  FontAwesomeIcons.thumbsUp,
-                  color: Colors.white,
-                  size: 18,
+            automaticallyImplyLeading: false,
+            centerTitle: true,
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: FaIcon(
+                    FontAwesomeIcons.solidMessage,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors
+                              .white, // Keep white on banner background usually
+                    size: 18,
+                  ),
+                  onPressed: () => context.push('/social/chat/${v.id}'),
+                  tooltip: 'Chat',
                 ),
-                onPressed: () {
-                  if (currentUser != null) {
-                    // Logic for recommend (similar to super like or specific repo call)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('You recommended $bizName!')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please sign in to recommend.'),
-                      ),
-                    );
-                  }
-                },
-                tooltip: 'Recommend',
-              ),
-              IconButton(
-                icon: const FaIcon(
-                  FontAwesomeIcons.shareNodes,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                onPressed: () {
-                  Share.share("Check out $bizName on RightLogistics!");
-                },
-                tooltip: 'Share',
-              ),
-              if (!isOwner && currentUser != null)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final updatedUser = ref.watch(currentUserProvider);
-                    final isFollowing =
-                        updatedUser?.followingIds.contains(v.id) ?? false;
-                    return IconButton(
-                      icon: FaIcon(
-                        isFollowing
-                            ? FontAwesomeIcons.userCheck
-                            : FontAwesomeIcons.userPlus,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      onPressed: () {
-                        if (isFollowing) {
-                          ref
-                              .read(socialRepositoryProvider)
-                              .unfollowUser(currentUser.id, v.id);
-                        } else {
-                          ref
-                              .read(socialRepositoryProvider)
-                              .followUser(currentUser.id, v.id);
-                        }
-                      },
-                      tooltip: isFollowing ? 'Unfollow' : 'Follow',
-                    );
+                IconButton(
+                  icon: FaIcon(
+                    FontAwesomeIcons.solidThumbsUp,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  onPressed: () {
+                    if (currentUser != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('You recommended $bizName!')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please sign in to recommend.'),
+                        ),
+                      );
+                    }
                   },
+                  tooltip: 'Recommend',
                 ),
-              const SizedBox(width: 8),
-            ],
+                IconButton(
+                  icon: const FaIcon(
+                    FontAwesomeIcons.shareNodes,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  onPressed: () {
+                    Share.share("Check out $bizName on RightLogistics!");
+                  },
+                  tooltip: 'Share',
+                ),
+                if (!isOwner && currentUser != null)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final updatedUser = ref.watch(currentUserProvider);
+                      final isFollowing =
+                          updatedUser?.followingIds.contains(v.id) ?? false;
+                      return IconButton(
+                        icon: FaIcon(
+                          isFollowing
+                              ? FontAwesomeIcons.userCheck
+                              : FontAwesomeIcons.userPlus,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          if (isFollowing) {
+                            ref
+                                .read(socialRepositoryProvider)
+                                .unfollowUser(currentUser.id, v.id);
+                          } else {
+                            ref
+                                .read(socialRepositoryProvider)
+                                .followUser(currentUser.id, v.id);
+                          }
+                        },
+                        tooltip: isFollowing ? 'Unfollow' : 'Follow',
+                      );
+                    },
+                  ),
+              ],
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
