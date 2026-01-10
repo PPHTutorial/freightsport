@@ -1632,7 +1632,7 @@ class _ImageCarouselState extends State<_ImageCarousel> {
                     ),
                     child: Center(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20.w),
+                        borderRadius: BorderRadius.circular(10.w),
                         child: CachedNetworkImage(
                           imageUrl: widget.imageUrls[index],
                           fit: BoxFit.cover,

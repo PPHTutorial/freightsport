@@ -33,17 +33,50 @@ final vendorPostsProvider = StreamProvider.autoDispose
           );
     });
 
-class VendorStoreScreen extends ConsumerWidget {
+class VendorStoreScreen extends ConsumerStatefulWidget {
   final UserModel vendor;
   const VendorStoreScreen({super.key, required this.vendor});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VendorStoreScreen> createState() => _VendorStoreScreenState();
+}
+
+class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
+  late ScrollController _scrollController;
+  bool _isCollapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final collapsed = _scrollController.offset > 140;
+      if (collapsed != _isCollapsed) {
+        setState(() {
+          _isCollapsed = collapsed;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Listen to real-time updates for this vendor
-    final vendorAsync = ref.watch(userProvider(vendor.id));
+    final vendorAsync = ref.watch(userProvider(widget.vendor.id));
 
     // Use the latest data if available, fallback to the passed model
-    final v = vendorAsync.value ?? vendor;
+    final v = vendorAsync.value ?? widget.vendor;
     final currentUser = ref.watch(currentUserProvider);
     final isOwner = currentUser?.id == v.id;
 
@@ -60,7 +93,6 @@ class VendorStoreScreen extends ConsumerWidget {
     final socials = vk?.vendorSocials ?? [];
 
     // Update Parent AppBar Branding
-    // We use Future.microtask to avoid "building while updating" errors
     Future.microtask(() {
       final location = GoRouterState.of(context).uri.path;
       final config = ref.read(appBarConfigProvider(location));
@@ -90,8 +122,15 @@ class VendorStoreScreen extends ConsumerWidget {
       }
     });
 
+    final iconColor = _isCollapsed
+        ? Colors.orange
+        : (Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : Colors.black87);
+
     return Scaffold(
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           SliverAppBar(
             pinned: true,
@@ -104,11 +143,8 @@ class VendorStoreScreen extends ConsumerWidget {
                 IconButton(
                   icon: FaIcon(
                     FontAwesomeIcons.solidMessage,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors
-                              .white, // Keep white on banner background usually
-                    size: 18,
+                    color: iconColor,
+                    size: 24,
                   ),
                   onPressed: () => context.push('/social/chat/${v.id}'),
                   tooltip: 'Chat',
@@ -116,8 +152,8 @@ class VendorStoreScreen extends ConsumerWidget {
                 IconButton(
                   icon: FaIcon(
                     FontAwesomeIcons.solidThumbsUp,
-                    color: Colors.white,
-                    size: 18,
+                    color: iconColor,
+                    size: 24,
                   ),
                   onPressed: () {
                     if (currentUser != null) {
@@ -135,10 +171,10 @@ class VendorStoreScreen extends ConsumerWidget {
                   tooltip: 'Recommend',
                 ),
                 IconButton(
-                  icon: const FaIcon(
+                  icon: FaIcon(
                     FontAwesomeIcons.shareNodes,
-                    color: Colors.white,
-                    size: 18,
+                    color: iconColor,
+                    size: 24,
                   ),
                   onPressed: () {
                     Share.share("Check out $bizName on RightLogistics!");
@@ -156,8 +192,8 @@ class VendorStoreScreen extends ConsumerWidget {
                           isFollowing
                               ? FontAwesomeIcons.userCheck
                               : FontAwesomeIcons.userPlus,
-                          color: Colors.white,
-                          size: 18,
+                          color: iconColor,
+                          size: 24,
                         ),
                         onPressed: () {
                           if (isFollowing) {
