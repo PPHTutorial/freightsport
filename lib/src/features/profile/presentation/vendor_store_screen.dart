@@ -137,80 +137,82 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
             expandedHeight: 200,
             automaticallyImplyLeading: false,
             centerTitle: true,
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: FaIcon(
-                    FontAwesomeIcons.solidMessage,
-                    color: iconColor,
-                    size: 24,
+            title: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: FaIcon(
+                      FontAwesomeIcons.solidMessage,
+                      color: iconColor,
+                      size: 24,
+                    ),
+                    onPressed: () => context.push('/social/chat/${v.id}'),
+                    tooltip: 'Chat',
                   ),
-                  onPressed: () => context.push('/social/chat/${v.id}'),
-                  tooltip: 'Chat',
-                ),
-                IconButton(
-                  icon: FaIcon(
-                    FontAwesomeIcons.solidThumbsUp,
-                    color: iconColor,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    if (currentUser != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('You recommended $bizName!')),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please sign in to recommend.'),
-                        ),
-                      );
-                    }
-                  },
-                  tooltip: 'Recommend',
-                ),
-                IconButton(
-                  icon: FaIcon(
-                    FontAwesomeIcons.shareNodes,
-                    color: iconColor,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    Share.share("Check out $bizName on RightLogistics!");
-                  },
-                  tooltip: 'Share',
-                ),
-                if (!isOwner && currentUser != null)
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final updatedUser = ref.watch(currentUserProvider);
-                      final isFollowing =
-                          updatedUser?.followingIds.contains(v.id) ?? false;
-                      return IconButton(
-                        icon: FaIcon(
-                          isFollowing
-                              ? FontAwesomeIcons.userCheck
-                              : FontAwesomeIcons.userPlus,
-                          color: iconColor,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          if (isFollowing) {
-                            ref
-                                .read(socialRepositoryProvider)
-                                .unfollowUser(currentUser.id, v.id);
-                          } else {
-                            ref
-                                .read(socialRepositoryProvider)
-                                .followUser(currentUser.id, v.id);
-                          }
-                        },
-                        tooltip: isFollowing ? 'Unfollow' : 'Follow',
-                      );
+                  IconButton(
+                    icon: FaIcon(
+                      FontAwesomeIcons.solidThumbsUp,
+                      color: iconColor,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      if (currentUser != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('You recommended $bizName!')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please sign in to recommend.'),
+                          ),
+                        );
+                      }
                     },
+                    tooltip: 'Recommend',
                   ),
-              ],
+                  IconButton(
+                    icon: FaIcon(
+                      FontAwesomeIcons.shareNodes,
+                      color: iconColor,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      Share.share("Check out $bizName on RightLogistics!");
+                    },
+                    tooltip: 'Share',
+                  ),
+                  if (!isOwner && currentUser != null)
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final updatedUser = ref.watch(currentUserProvider);
+                        final isFollowing =
+                            updatedUser?.followingIds.contains(v.id) ?? false;
+                        return IconButton(
+                          icon: FaIcon(
+                            isFollowing
+                                ? FontAwesomeIcons.userCheck
+                                : FontAwesomeIcons.userPlus,
+                            color: iconColor,
+                            size: 24,
+                          ),
+                          onPressed: () {
+                            if (isFollowing) {
+                              ref
+                                  .read(socialRepositoryProvider)
+                                  .unfollowUser(currentUser.id, v.id);
+                            } else {
+                              ref
+                                  .read(socialRepositoryProvider)
+                                  .followUser(currentUser.id, v.id);
+                            }
+                          },
+                          tooltip: isFollowing ? 'Unfollow' : 'Follow',
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
