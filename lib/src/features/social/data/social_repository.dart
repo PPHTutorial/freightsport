@@ -430,4 +430,27 @@ class SocialRepository {
         .doc(postId)
         .set({'hiddenAt': FieldValue.serverTimestamp()});
   }
+
+  // --- Recommendations ---
+  Future<void> recommendVendor(String userId, String vendorId) async {
+    await _firestore.collection('users').doc(vendorId).update({
+      'recommendationIds': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  Future<void> unrecommendVendor(String userId, String vendorId) async {
+    await _firestore.collection('users').doc(vendorId).update({
+      'recommendationIds': FieldValue.arrayRemove([userId]),
+    });
+  }
+
+  Stream<List<String>> watchRecommendationIds(String vendorId) {
+    return _firestore.collection('users').doc(vendorId).snapshots().map((
+      snapshot,
+    ) {
+      if (!snapshot.exists) return [];
+      final data = snapshot.data();
+      return List<String>.from(data?['recommendationIds'] ?? []);
+    });
+  }
 }

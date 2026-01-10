@@ -168,6 +168,11 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      recommendationIds:
+          (json['recommendationIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       accountStatus:
           $enumDecodeNullable(_$AccountStatusEnumMap, json['accountStatus']) ??
           AccountStatus.active,
@@ -207,6 +212,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'verificationNote': instance.verificationNote,
       'followerIds': instance.followerIds,
       'followingIds': instance.followingIds,
+      'recommendationIds': instance.recommendationIds,
       'accountStatus': _$AccountStatusEnumMap[instance.accountStatus]!,
       'blockedUserIds': instance.blockedUserIds,
       'averageRating': instance.averageRating,

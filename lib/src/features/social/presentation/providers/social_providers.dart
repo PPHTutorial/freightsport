@@ -53,4 +53,11 @@ final activeStatusesProvider = StreamProvider<List<StatusModel>>((ref) {
   return ref.watch(socialRepositoryProvider).watchActiveStatuses();
 });
 
+final recommendationIdsProvider = StreamProvider.autoDispose
+    .family<List<String>, String>((ref, vendorId) {
+      return ref
+          .watch(socialRepositoryProvider)
+          .watchRecommendationIds(vendorId);
+    });
+
 // socialSearchQueryProvider is now deprecated in favor of global searchQueryProvider

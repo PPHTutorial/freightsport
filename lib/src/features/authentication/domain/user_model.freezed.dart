@@ -1341,6 +1341,7 @@ mixin _$UserModel {
   String? get verificationNote => throw _privateConstructorUsedError;
   List<String> get followerIds => throw _privateConstructorUsedError;
   List<String> get followingIds => throw _privateConstructorUsedError;
+  List<String> get recommendationIds => throw _privateConstructorUsedError;
   AccountStatus get accountStatus => throw _privateConstructorUsedError;
   List<String> get blockedUserIds => throw _privateConstructorUsedError;
   double get averageRating => throw _privateConstructorUsedError;
@@ -1382,6 +1383,7 @@ abstract class $UserModelCopyWith<$Res> {
     String? verificationNote,
     List<String> followerIds,
     List<String> followingIds,
+    List<String> recommendationIds,
     AccountStatus accountStatus,
     List<String> blockedUserIds,
     double averageRating,
@@ -1429,6 +1431,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? verificationNote = freezed,
     Object? followerIds = null,
     Object? followingIds = null,
+    Object? recommendationIds = null,
     Object? accountStatus = null,
     Object? blockedUserIds = null,
     Object? averageRating = null,
@@ -1512,6 +1515,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
             followingIds: null == followingIds
                 ? _value.followingIds
                 : followingIds // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            recommendationIds: null == recommendationIds
+                ? _value.recommendationIds
+                : recommendationIds // ignore: cast_nullable_to_non_nullable
                       as List<String>,
             accountStatus: null == accountStatus
                 ? _value.accountStatus
@@ -1624,6 +1631,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
     String? verificationNote,
     List<String> followerIds,
     List<String> followingIds,
+    List<String> recommendationIds,
     AccountStatus accountStatus,
     List<String> blockedUserIds,
     double averageRating,
@@ -1674,6 +1682,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? verificationNote = freezed,
     Object? followerIds = null,
     Object? followingIds = null,
+    Object? recommendationIds = null,
     Object? accountStatus = null,
     Object? blockedUserIds = null,
     Object? averageRating = null,
@@ -1758,6 +1767,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
             ? _value._followingIds
             : followingIds // ignore: cast_nullable_to_non_nullable
                   as List<String>,
+        recommendationIds: null == recommendationIds
+            ? _value._recommendationIds
+            : recommendationIds // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
         accountStatus: null == accountStatus
             ? _value.accountStatus
             : accountStatus // ignore: cast_nullable_to_non_nullable
@@ -1806,6 +1819,7 @@ class _$UserModelImpl implements _UserModel {
     this.verificationNote,
     final List<String> followerIds = const [],
     final List<String> followingIds = const [],
+    final List<String> recommendationIds = const [],
     this.accountStatus = AccountStatus.active,
     final List<String> blockedUserIds = const [],
     this.averageRating = 0.0,
@@ -1814,6 +1828,7 @@ class _$UserModelImpl implements _UserModel {
   }) : _kycData = kycData,
        _followerIds = followerIds,
        _followingIds = followingIds,
+       _recommendationIds = recommendationIds,
        _blockedUserIds = blockedUserIds,
        _ratingBreakdown = ratingBreakdown;
 
@@ -1882,6 +1897,16 @@ class _$UserModelImpl implements _UserModel {
     return EqualUnmodifiableListView(_followingIds);
   }
 
+  final List<String> _recommendationIds;
+  @override
+  @JsonKey()
+  List<String> get recommendationIds {
+    if (_recommendationIds is EqualUnmodifiableListView)
+      return _recommendationIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_recommendationIds);
+  }
+
   @override
   @JsonKey()
   final AccountStatus accountStatus;
@@ -1911,7 +1936,7 @@ class _$UserModelImpl implements _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, email: $email, name: $name, username: $username, role: $role, photoUrl: $photoUrl, phoneNumber: $phoneNumber, verificationStatus: $verificationStatus, isProfileComplete: $isProfileComplete, kycData: $kycData, companyLogo: $companyLogo, companyBanner: $companyBanner, address: $address, identity: $identity, vendorKyc: $vendorKyc, courierKyc: $courierKyc, verificationNote: $verificationNote, followerIds: $followerIds, followingIds: $followingIds, accountStatus: $accountStatus, blockedUserIds: $blockedUserIds, averageRating: $averageRating, totalReviews: $totalReviews, ratingBreakdown: $ratingBreakdown)';
+    return 'UserModel(id: $id, email: $email, name: $name, username: $username, role: $role, photoUrl: $photoUrl, phoneNumber: $phoneNumber, verificationStatus: $verificationStatus, isProfileComplete: $isProfileComplete, kycData: $kycData, companyLogo: $companyLogo, companyBanner: $companyBanner, address: $address, identity: $identity, vendorKyc: $vendorKyc, courierKyc: $courierKyc, verificationNote: $verificationNote, followerIds: $followerIds, followingIds: $followingIds, recommendationIds: $recommendationIds, accountStatus: $accountStatus, blockedUserIds: $blockedUserIds, averageRating: $averageRating, totalReviews: $totalReviews, ratingBreakdown: $ratingBreakdown)';
   }
 
   @override
@@ -1955,6 +1980,10 @@ class _$UserModelImpl implements _UserModel {
               other._followingIds,
               _followingIds,
             ) &&
+            const DeepCollectionEquality().equals(
+              other._recommendationIds,
+              _recommendationIds,
+            ) &&
             (identical(other.accountStatus, accountStatus) ||
                 other.accountStatus == accountStatus) &&
             const DeepCollectionEquality().equals(
@@ -1994,6 +2023,7 @@ class _$UserModelImpl implements _UserModel {
     verificationNote,
     const DeepCollectionEquality().hash(_followerIds),
     const DeepCollectionEquality().hash(_followingIds),
+    const DeepCollectionEquality().hash(_recommendationIds),
     accountStatus,
     const DeepCollectionEquality().hash(_blockedUserIds),
     averageRating,
@@ -2036,6 +2066,7 @@ abstract class _UserModel implements UserModel {
     final String? verificationNote,
     final List<String> followerIds,
     final List<String> followingIds,
+    final List<String> recommendationIds,
     final AccountStatus accountStatus,
     final List<String> blockedUserIds,
     final double averageRating,
@@ -2084,6 +2115,8 @@ abstract class _UserModel implements UserModel {
   List<String> get followerIds;
   @override
   List<String> get followingIds;
+  @override
+  List<String> get recommendationIds;
   @override
   AccountStatus get accountStatus;
   @override

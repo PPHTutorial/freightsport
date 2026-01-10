@@ -123,10 +123,10 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
     });
 
     final iconColor = _isCollapsed
-        ? Colors.orange
-        : (Theme.of(context).brightness == Brightness.dark
+        ? Theme.of(context).brightness == Brightness.dark
               ? Colors.white
-              : Colors.black87);
+              : Colors.black87
+        : Colors.orange;
 
     return Scaffold(
       body: CustomScrollView(
@@ -137,7 +137,8 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
             expandedHeight: 200,
             automaticallyImplyLeading: false,
             centerTitle: true,
-            title: Center(
+            title: Container(
+              alignment: Alignment.bottomCenter,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -147,29 +148,79 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                       color: iconColor,
                       size: 24,
                     ),
-                    onPressed: () => context.push('/social/chat/${v.id}'),
-                    tooltip: 'Chat',
-                  ),
-                  IconButton(
-                    icon: FaIcon(
-                      FontAwesomeIcons.solidThumbsUp,
-                      color: iconColor,
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      if (currentUser != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('You recommended $bizName!')),
-                        );
-                      } else {
+                    onPressed: () async {
+                      if (currentUser == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Please sign in to recommend.'),
+                            content: Text('Please sign in to chat.'),
                           ),
                         );
+                        return;
                       }
+                      // Ensure chat room exists
+                      await ref
+                          .read(socialRepositoryProvider)
+                          .getOrCreateChatRoom(
+                            currentUser.id,
+                            v.id,
+                            userDetails1: {
+                              'name': currentUser.name,
+                              'photoUrl': currentUser.photoUrl,
+                            },
+                            userDetails2: {
+                              'name': bizName,
+                              'photoUrl': v.companyLogo ?? v.photoUrl,
+                            },
+                          );
+                      if (mounted) context.push('/social/chat/${v.id}');
                     },
-                    tooltip: 'Recommend',
+                    tooltip: 'Chat',
+                  ),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final recommendationsAsync = ref.watch(
+                        recommendationIdsProvider(v.id),
+                      );
+                      final recIds = recommendationsAsync.value ?? [];
+                      final isRecommended =
+                          currentUser != null &&
+                          recIds.contains(currentUser.id);
+
+                      return IconButton(
+                        icon: FaIcon(
+                          isRecommended
+                              ? FontAwesomeIcons.solidThumbsUp
+                              : FontAwesomeIcons.thumbsUp,
+                          color: isRecommended ? Colors.orange : iconColor,
+                          size: 24,
+                        ),
+                        onPressed: () {
+                          if (currentUser == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please sign in to recommend.'),
+                              ),
+                            );
+                            return;
+                          }
+                          if (isRecommended) {
+                            ref
+                                .read(socialRepositoryProvider)
+                                .unrecommendVendor(currentUser.id, v.id);
+                          } else {
+                            ref
+                                .read(socialRepositoryProvider)
+                                .recommendVendor(currentUser.id, v.id);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('You recommended $bizName!'),
+                              ),
+                            );
+                          }
+                        },
+                        tooltip: isRecommended ? 'Unrecommend' : 'Recommend',
+                      );
+                    },
                   ),
                   IconButton(
                     icon: FaIcon(
@@ -193,7 +244,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                             isFollowing
                                 ? FontAwesomeIcons.userCheck
                                 : FontAwesomeIcons.userPlus,
-                            color: iconColor,
+                            color: isFollowing ? Colors.orange : iconColor,
                             size: 24,
                           ),
                           onPressed: () {

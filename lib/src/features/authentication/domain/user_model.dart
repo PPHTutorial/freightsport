@@ -114,6 +114,7 @@ class UserModel with _$UserModel {
     String? verificationNote,
     @Default([]) List<String> followerIds,
     @Default([]) List<String> followingIds,
+    @Default([]) List<String> recommendationIds,
     @Default(AccountStatus.active) AccountStatus accountStatus,
     @Default([]) List<String> blockedUserIds,
     @Default(0.0) double averageRating,

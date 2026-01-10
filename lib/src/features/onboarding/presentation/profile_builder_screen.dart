@@ -425,45 +425,29 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
           );
           return;
         }
-
-        // Validate Phone Uniqueness
-        final allPhones = <String>{};
-        for (final p in _vendorPhones) {
-          final num = p['number']?.trim();
-          if (num != null && num.isNotEmpty) {
-            if (allPhones.contains(num)) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Duplicate phone number found in Contacts: $num',
-                  ),
-                ),
-              );
-              return;
-            }
-            allPhones.add(num);
-          }
+        // _vendorRates is optional? or mandatory? "rest needs at least 1 input each"
+        if (_vendorRates.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please add at least one shipping rate'),
+            ),
+          );
+          return;
         }
-        for (final addr in _vendorAddresses) {
-          final phones = (addr['phones'] as List?)?.cast<String>() ?? [];
-          for (final p in phones) {
-            final num = p.trim();
-            if (num.isNotEmpty) {
-              if (allPhones.contains(num)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Duplicate phone number found in Warehouses: $num',
-                    ),
-                  ),
-                );
-                return;
-              }
-              allPhones.add(num);
-            }
-          }
+        if (_vendorSocials.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please add at least one social media handle'),
+            ),
+          );
+          return;
         }
-
+        if (_vendorFAQs.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please add at least one FAQ')),
+          );
+          return;
+        }
         if (_vendorRoutes.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
