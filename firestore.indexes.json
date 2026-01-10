@@ -1,0 +1,61 @@
+{
+    "indexes": [
+        {
+            "collectionGroup": "posts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "expiresAt",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "shipments",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "senderId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "shipments",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "recipientId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "chats",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "participantIds",
+                    "arrayConfig": "CONTAINS"
+                },
+                {
+                    "fieldPath": "lastMessageAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        }
+    ],
+    "fieldOverrides": []
+}

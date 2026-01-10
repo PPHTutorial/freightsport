@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // User Folders (Profile images, documents, etc.)
+    match /users/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Explicit segment for KYC if needed at root (Backwards compatibility)
+    match /kyc_documents/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+    
+    // Shipment Documentation/Photos
+    match /shipments/{trackingNumber}/{allPaths=**} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        firestore.get(/databases/(default)/documents/shipments/$(trackingNumber)).data.assignedCourierId == request.auth.uid ||
+        firestore.get(/databases/(default)/documents/shipments/$(trackingNumber)).data.senderId == request.auth.uid ||
+        firestore.get(/databases/(default)/documents/shipments/$(trackingNumber)).data.recipientId == request.auth.uid
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() || 
+        firestore.get(/databases/(default)/documents/shipments/$(trackingNumber)).data.assignedCourierId == request.auth.uid
+      );
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+    "indexes": [
+        {
+            "collectionGroup": "posts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "expiresAt",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "shipments",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "senderId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "shipments",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "recipientId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "statuses",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "expiresAt",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "chats",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "participantIds",
+                    "arrayConfig": "CONTAINS"
+                },
+                {
+                    "fieldPath": "lastMessageAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "notifications",
+            "queryScope": "COLLECTION_GROUP",
+            "fields": [
+                {
+                    "fieldPath": "timestamp",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "broadcasts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "timestamp",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "admin_alerts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "timestamp",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "comments",
+            "queryScope": "COLLECTION_GROUP",
+            "fields": [
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "messages",
+            "queryScope": "COLLECTION_GROUP",
+            "fields": [
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        }
+    ],
+    "fieldOverrides": []
+}

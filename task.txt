@@ -1,0 +1,6 @@
+Now time to create management forms to seed and update data into the database manually form users of any role; Customer, Admin, Courier, Vendor.
+
+Create and Validate Forms that will Create and Update users (All four roles; can reuse all signup and Verification onbaording), Posts (can reuse the social hub), Broadcast/Message(s),
+Shipments (already present), Warehouses, quotations(Vendors charges) (drop off and pickups), courier_assignment and every collection must have a form to feed in validated data conforming to the approparite schema
+or each present model
+

@@ -1,0 +1,32 @@
+{
+    "firestore": {
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes"
+    },
+    "storage": {
+        "rules": "storage.rules"
+    },
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "rightlogistics-a3e1a",
+                    "appId": "1:514046157450:android:ec9fb7b150bf06970e4373",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "rightlogistics-a3e1a",
+                    "configurations": {
+                        "android": "1:514046157450:android:ec9fb7b150bf06970e4373",
+                        "ios": "1:514046157450:ios:1a461935393c0cac0e4373",
+                        "macos": "1:514046157450:ios:1a461935393c0cac0e4373",
+                        "web": "1:514046157450:web:95b47e50ab7258060e4373",
+                        "windows": "1:514046157450:web:e3563b8e004e40bf0e4373"
+                    }
+                }
+            }
+        }
+    }
+}
