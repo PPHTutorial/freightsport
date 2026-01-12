@@ -59,24 +59,41 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout'), elevation: 0),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildOrderSummary(),
-            const SizedBox(height: 32.0),
-            Text(
-              'Select Payment Method',
-              style: GoogleFonts.redHatDisplay(
-                fontSize: 18.0,
-                fontWeight: FontWeight.bold,
+            // Fixed Header: Order Summary
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: _buildOrderSummary(),
+            ),
+
+            // Scrollable Center: Payment Methods
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Select Payment Method',
+                      style: GoogleFonts.redHatDisplay(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16.0),
+                    _buildPaymentProviders(),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16.0),
-            _buildPaymentProviders(),
-            const SizedBox(height: 40.0),
-            _buildPayButton(),
+
+            // Fixed Bottom: Pay Button
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: _buildPayButton(),
+            ),
           ],
         ),
       ),
@@ -85,84 +102,98 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   Widget _buildOrderSummary() {
     return Container(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(24.0),
+        borderRadius: BorderRadius.circular(20.0),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           _buildItemBrief(),
-          const Divider(height: 32.0),
+          const Divider(height: 24.0),
           _buildSummaryRow('Subtotal', _subtotal),
           if (_appliedCoupon != null) ...[
-            const SizedBox(height: 8.0),
+            const SizedBox(height: 4.0),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.local_offer_rounded,
-                      size: 14,
-                      color: AppTheme.successGreen,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Discount (${_appliedCoupon!.promoCode})',
-                      style: const TextStyle(color: AppTheme.successGreen),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.cancel_rounded,
-                        size: 16,
-                        color: Colors.red,
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.local_offer_rounded,
+                        size: 14,
+                        color: AppTheme.successGreen,
                       ),
-                      onPressed: () => setState(() => _appliedCoupon = null),
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                    ),
-                  ],
-                ),
-                Text(
-                  '- ',
-                  style: const TextStyle(color: AppTheme.successGreen),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          'Discount (${_appliedCoupon!.promoCode})',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.successGreen,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.cancel_rounded,
+                          size: 16,
+                          color: Colors.red,
+                        ),
+                        onPressed: () => setState(() => _appliedCoupon = null),
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                      ),
+                    ],
+                  ),
                 ),
                 CurrencyDisplay(
                   amount: _discount,
                   fromCurrency: widget.post.currency,
-                  style: const TextStyle(color: AppTheme.successGreen),
+                  style: const TextStyle(
+                    color: AppTheme.successGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
           ],
-          const SizedBox(height: 8.0),
+          const SizedBox(height: 4.0),
           _buildSummaryRow('Service Fee (5%)', _serviceFee),
-          const SizedBox(height: 8.0),
+          const SizedBox(height: 4.0),
           _buildSummaryRow('Tax (1%)', _tax),
-          const Divider(height: 32.0),
+          const Divider(height: 24.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'Total',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               CurrencyDisplay(
                 amount: _total,
                 fromCurrency: widget.post.currency,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 16,
                   color: AppTheme.successGreen,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16.0),
+          const SizedBox(height: 12.0),
           _buildCouponSection(),
         ],
       ),
@@ -173,10 +204,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     return Row(
       children: [
         Container(
-          width: 60.0,
-          height: 60.0,
+          width: 48.0,
+          height: 48.0,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: BorderRadius.circular(10.0),
             color: Colors.grey[200],
             image: widget.post.imageUrls.isNotEmpty
                 ? DecorationImage(
@@ -186,31 +217,29 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 : null,
           ),
         ),
-        const SizedBox(width: 16.0),
+        const SizedBox(width: 12.0),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 widget.post.title ?? 'Item',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16.0,
+                  fontSize: 14.0,
                 ),
               ),
               Text(
                 'Quantity: ${widget.quantity}',
                 style: TextStyle(
+                  fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
           ),
-        ),
-        CurrencyDisplay(
-          amount: _subtotal,
-          fromCurrency: widget.post.currency,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
         ),
       ],
     );
@@ -220,8 +249,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label),
-        CurrencyDisplay(amount: amount, fromCurrency: widget.post.currency),
+        Text(label, style: const TextStyle(fontSize: 13)),
+        CurrencyDisplay(
+          amount: amount,
+          fromCurrency: widget.post.currency,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
@@ -229,108 +262,174 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget _buildCouponSection() {
     if (_appliedCoupon != null) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _couponController,
-                focusNode: _couponFocusNode,
-                decoration: InputDecoration(
-                  hintText: 'Enter Coupon Code',
-                  errorText: _couponError,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+        Expanded(
+          child: SizedBox(
+            height: 36,
+            child: TextField(
+              controller: _couponController,
+              focusNode: _couponFocusNode,
+              style: const TextStyle(fontSize: 12),
+              decoration: InputDecoration(
+                hintText: 'Enter Coupon Code',
+                errorText: _couponError,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: _isValidatingCoupon ? null : _applyCoupon,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 36,
+          child: ElevatedButton(
+            onPressed: _isValidatingCoupon ? null : _applyCoupon,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: _isValidatingCoupon
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Apply'),
             ),
-          ],
+            child: _isValidatingCoupon
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Apply', style: TextStyle(fontSize: 12)),
+          ),
         ),
       ],
     );
   }
 
   Widget _buildPaymentProviders() {
-    // Determine methods based on user jurisdiction
     final user = ref.watch(currentUserProvider);
-    final isGhana =
-        user?.address?.countryCode == 'GH' ||
-        user?.address?.country.toLowerCase() == 'ghana' ||
-        widget.post.currency == 'GHS';
+    final countryCode = user?.address?.countryCode.toUpperCase() ?? '';
+    final currency = widget.post.currency.toUpperCase();
+
+    // Flutterwave Jurisdictional Methods (Excluding Card)
+    List<Widget> fwaveMethods = [
+      _buildMethodTile(
+        'Mobile Money',
+        'mobile_money',
+        FontAwesomeIcons.mobileScreen,
+        Colors.amber,
+        'flutterwave',
+      ),
+    ];
+
+    // Nigeria (NG)
+    if (countryCode == 'NG' || currency == 'NGN') {
+      fwaveMethods.addAll([
+        _buildMethodTile(
+          'USSD',
+          'ussd',
+          FontAwesomeIcons.hashtag,
+          Colors.blue,
+          'flutterwave',
+        ),
+        _buildMethodTile(
+          'Bank Transfer',
+          'bank_transfer',
+          FontAwesomeIcons.building,
+          Colors.green,
+          'flutterwave',
+        ),
+        _buildMethodTile(
+          'OPay / Palmpay',
+          'agent_payment',
+          FontAwesomeIcons.buildingColumns,
+          Colors.greenAccent,
+          'flutterwave',
+        ),
+      ]);
+    }
+    // Kenya (KE)
+    else if (countryCode == 'KE' || currency == 'KES') {
+      fwaveMethods.add(
+        _buildMethodTile(
+          'M-Pesa',
+          'mpesa',
+          FontAwesomeIcons.mobile,
+          Colors.green,
+          'flutterwave',
+        ),
+      );
+    }
+    // South Africa (ZA)
+    else if (countryCode == 'ZA' || currency == 'ZAR') {
+      fwaveMethods.add(
+        _buildMethodTile(
+          'Instant EFT',
+          'eft',
+          FontAwesomeIcons.bolt,
+          Colors.orangeAccent,
+          'flutterwave',
+        ),
+      );
+    }
+    // Ghana (GH)
+    else if (countryCode == 'GH' || currency == 'GHS') {
+      fwaveMethods.addAll([
+        _buildMethodTile(
+          'Vodafone Cash',
+          'vodafone_cash',
+          Icons.wallet_rounded,
+          Colors.red,
+          'flutterwave',
+        ),
+        _buildMethodTile(
+          'Hubtel',
+          'hubtel',
+          FontAwesomeIcons.plug,
+          Colors.blueAccent,
+          'flutterwave',
+        ),
+      ]);
+    }
+    // East Africa (UG, TZ, RW)
+    else if (['UG', 'TZ', 'RW'].contains(countryCode)) {
+      fwaveMethods.add(
+        _buildMethodTile(
+          'Mobile Money East Africa',
+          'mobile_money_east',
+          FontAwesomeIcons.mobileRetro,
+          Colors.deepOrange,
+          'flutterwave',
+        ),
+      );
+    }
+
+    // Default Bank Transfer for others
+    if (fwaveMethods.length == 1) {
+      fwaveMethods.add(
+        _buildMethodTile(
+          'Bank Transfer',
+          'bank_transfer',
+          FontAwesomeIcons.building,
+          Colors.blueGrey,
+          'flutterwave',
+        ),
+      );
+    }
 
     return Column(
       children: [
         _buildProviderGroup(
-          'Mobile Money & Others (Flutterwave)',
+          'Flutterwave (Regional / Local)',
           'flutterwave',
-          [
-            // Ghana Specific non-card methods
-            _buildMethodTile(
-              'Mobile Money',
-              'mobile_money',
-              FontAwesomeIcons.mobileScreen,
-              Colors.amber,
-              'flutterwave',
-            ),
-            if (isGhana) ...[
-              _buildMethodTile(
-                'Hubtel',
-                'hubtel',
-                FontAwesomeIcons.plug,
-                Colors.blueAccent,
-                'flutterwave',
-              ),
-              _buildMethodTile(
-                'Vodafone Cash',
-                'vodafone_cash',
-                FontAwesomeIcons.wallet,
-                Colors.redAccent,
-                'flutterwave',
-              ),
-            ],
-            _buildMethodTile(
-              'Bank Transfer',
-              'bank_transfer',
-              FontAwesomeIcons.bank,
-              Colors.green,
-              'flutterwave',
-            ),
-            _buildMethodTile(
-              'Barter',
-              'barter',
-              FontAwesomeIcons.wallet,
-              Colors.purple,
-              'flutterwave',
-            ),
-          ],
+          fwaveMethods,
         ),
         const SizedBox(height: 24),
-        _buildProviderGroup('Card Payments (Stripe)', 'stripe', [
+        _buildProviderGroup('Stripe (Global Card)', 'stripe', [
           _buildMethodTile(
             'Credit/Debit Card',
             'card',
@@ -340,7 +439,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           ),
         ]),
         const SizedBox(height: 24),
-        _buildProviderGroup('Cryptocurrency (NowPayments)', 'nowpayments', [
+        _buildProviderGroup('NowPayments (Global Crypto)', 'nowpayments', [
           _buildMethodTile(
             'Crypto Wallet',
             'crypto',
@@ -363,7 +462,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             title,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
@@ -403,7 +502,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: color),
+            Icon(icon, color: color, size: 20),
             const SizedBox(width: 16.0),
             Expanded(
               child: Text(
@@ -418,6 +517,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               Icon(
                 Icons.check_circle,
                 color: Theme.of(context).colorScheme.primary,
+                size: 20,
               ),
           ],
         ),
@@ -433,30 +533,38 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         onPressed: _isProcessing ? null : () => _processPayment(),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.successGreen,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shadowColor: AppTheme.successGreen.withOpacity(0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.0),
           ),
         ),
         child: _isProcessing
-            ? const CircularProgressIndicator(color: Colors.white)
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              )
             : Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     'PAY ',
                     style: TextStyle(
-                      fontSize: 16.0,
+                      fontSize: 18.0,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
                     ),
                   ),
                   CurrencyDisplay(
                     amount: _total,
                     fromCurrency: widget.post.currency,
                     style: const TextStyle(
-                      fontSize: 16.0,
+                      fontSize: 18.0,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -490,7 +598,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Coupon applied successfully!')),
+          const SnackBar(
+            content: Text('Coupon applied successfully!'),
+            backgroundColor: AppTheme.successGreen,
+          ),
         );
       }
     } catch (e) {
@@ -503,13 +614,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Future<void> _processPayment() async {
     setState(() => _isProcessing = true);
 
-    // MOCK Server-side Processing
     try {
-      // Simulate network delay to local server
+      // MOCK Integration Flow
+      // In a real app, this would initiate the specific SDK or API for the provider
       await Future.delayed(const Duration(seconds: 3));
-
-      // Call mock endpoint
-      // res = await http.post(Uri.parse('api/payments/$_selectedProvider/initiate'), body: {...});
 
       if (!mounted) return;
       _showSuccessDialog();
@@ -556,7 +664,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             ),
             const SizedBox(height: 8.0),
             Text(
-              'Your pre-order has been secured via $_selectedProvider.',
+              'Secured via $_selectedProvider.\nYour pre-order is confirmed.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -565,12 +673,18 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Close PaymentScreen
-            },
-            child: const Text('DONE'),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Close PaymentScreen
+              },
+              child: const Text(
+                'DONE',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ],
       ),
