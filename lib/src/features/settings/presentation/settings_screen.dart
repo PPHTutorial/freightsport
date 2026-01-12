@@ -9,6 +9,8 @@ import 'package:rightlogistics/src/core/theme/app_theme.dart';
 import 'package:rightlogistics/src/core/utils/size_config.dart';
 import 'package:rightlogistics/src/features/authentication/data/auth_repository.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:rightlogistics/src/features/common/presentation/widgets/country_selector_dialog.dart';
+import 'package:rightlogistics/src/features/settings/application/currency_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -117,6 +119,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        const SizedBox(height: 12),
         _buildSettingTile(
           icon: FontAwesomeIcons.bell,
           title: 'Push Notifications',
@@ -126,6 +129,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onChanged: (val) {},
             activeColor: Theme.of(context).colorScheme.secondary,
           ),
+        ),
+        const SizedBox(height: 12),
+        Consumer(
+          builder: (context, ref, child) {
+            final selectedCountry = ref.watch(selectedCountryProvider);
+            return _buildSettingTile(
+              icon: FontAwesomeIcons.moneyBillWave,
+              title: 'Base Currency',
+              subtitle: '${selectedCountry.name} (${selectedCountry.currency})',
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => CountrySelectorDialog(
+                    onSelect: (country) {
+                      ref
+                          .read(selectedCountryProvider.notifier)
+                          .setCountry(country);
+                      context.pop();
+                    },
+                  ),
+                );
+              },
+            );
+          },
         ),
 
         const SizedBox(height: 32),

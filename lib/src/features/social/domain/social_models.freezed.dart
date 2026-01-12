@@ -37,12 +37,20 @@ mixin _$VendorPost {
   int? get minOrder => throw _privateConstructorUsedError; // Target amount
   int? get maxOrder => throw _privateConstructorUsedError;
   int get currentOrderCount => throw _privateConstructorUsedError; // Progress
-  @TimestampNullableConverter()
-  DateTime? get eta => throw _privateConstructorUsedError;
-  String? get deliveryTime =>
-      throw _privateConstructorUsedError; // e.g., "3-5 days"
   String? get deliveryMode =>
       throw _privateConstructorUsedError; // e.g., "Air Freight"
+  String? get deliveryTime =>
+      throw _privateConstructorUsedError; // e.g., "3-5 days"
+  @TimestampNullableConverter()
+  DateTime? get eta => throw _privateConstructorUsedError; // Promotion Specifics
+  String? get promoCode => throw _privateConstructorUsedError;
+  double? get discountPercentage => throw _privateConstructorUsedError;
+  double? get discountAmount => throw _privateConstructorUsedError;
+  @TimestampNullableConverter()
+  DateTime? get promoExpiry => throw _privateConstructorUsedError;
+  String? get termsAndConditions => throw _privateConstructorUsedError;
+  double? get minPurchaseAmount => throw _privateConstructorUsedError;
+  int? get usageLimit => throw _privateConstructorUsedError;
   PostType get type => throw _privateConstructorUsedError;
   PostVisibility get visibility => throw _privateConstructorUsedError;
   @TimestampConverter()
@@ -90,9 +98,16 @@ abstract class $VendorPostCopyWith<$Res> {
     int? minOrder,
     int? maxOrder,
     int currentOrderCount,
-    @TimestampNullableConverter() DateTime? eta,
-    String? deliveryTime,
     String? deliveryMode,
+    String? deliveryTime,
+    @TimestampNullableConverter() DateTime? eta,
+    String? promoCode,
+    double? discountPercentage,
+    double? discountAmount,
+    @TimestampNullableConverter() DateTime? promoExpiry,
+    String? termsAndConditions,
+    double? minPurchaseAmount,
+    int? usageLimit,
     PostType type,
     PostVisibility visibility,
     @TimestampConverter() DateTime createdAt,
@@ -136,9 +151,16 @@ class _$VendorPostCopyWithImpl<$Res, $Val extends VendorPost>
     Object? minOrder = freezed,
     Object? maxOrder = freezed,
     Object? currentOrderCount = null,
-    Object? eta = freezed,
-    Object? deliveryTime = freezed,
     Object? deliveryMode = freezed,
+    Object? deliveryTime = freezed,
+    Object? eta = freezed,
+    Object? promoCode = freezed,
+    Object? discountPercentage = freezed,
+    Object? discountAmount = freezed,
+    Object? promoExpiry = freezed,
+    Object? termsAndConditions = freezed,
+    Object? minPurchaseAmount = freezed,
+    Object? usageLimit = freezed,
     Object? type = null,
     Object? visibility = null,
     Object? createdAt = null,
@@ -209,18 +231,46 @@ class _$VendorPostCopyWithImpl<$Res, $Val extends VendorPost>
                 ? _value.currentOrderCount
                 : currentOrderCount // ignore: cast_nullable_to_non_nullable
                       as int,
-            eta: freezed == eta
-                ? _value.eta
-                : eta // ignore: cast_nullable_to_non_nullable
-                      as DateTime?,
-            deliveryTime: freezed == deliveryTime
-                ? _value.deliveryTime
-                : deliveryTime // ignore: cast_nullable_to_non_nullable
-                      as String?,
             deliveryMode: freezed == deliveryMode
                 ? _value.deliveryMode
                 : deliveryMode // ignore: cast_nullable_to_non_nullable
                       as String?,
+            deliveryTime: freezed == deliveryTime
+                ? _value.deliveryTime
+                : deliveryTime // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            eta: freezed == eta
+                ? _value.eta
+                : eta // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            promoCode: freezed == promoCode
+                ? _value.promoCode
+                : promoCode // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            discountPercentage: freezed == discountPercentage
+                ? _value.discountPercentage
+                : discountPercentage // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            discountAmount: freezed == discountAmount
+                ? _value.discountAmount
+                : discountAmount // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            promoExpiry: freezed == promoExpiry
+                ? _value.promoExpiry
+                : promoExpiry // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            termsAndConditions: freezed == termsAndConditions
+                ? _value.termsAndConditions
+                : termsAndConditions // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            minPurchaseAmount: freezed == minPurchaseAmount
+                ? _value.minPurchaseAmount
+                : minPurchaseAmount // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            usageLimit: freezed == usageLimit
+                ? _value.usageLimit
+                : usageLimit // ignore: cast_nullable_to_non_nullable
+                      as int?,
             type: null == type
                 ? _value.type
                 : type // ignore: cast_nullable_to_non_nullable
@@ -295,9 +345,16 @@ abstract class _$$VendorPostImplCopyWith<$Res>
     int? minOrder,
     int? maxOrder,
     int currentOrderCount,
-    @TimestampNullableConverter() DateTime? eta,
-    String? deliveryTime,
     String? deliveryMode,
+    String? deliveryTime,
+    @TimestampNullableConverter() DateTime? eta,
+    String? promoCode,
+    double? discountPercentage,
+    double? discountAmount,
+    @TimestampNullableConverter() DateTime? promoExpiry,
+    String? termsAndConditions,
+    double? minPurchaseAmount,
+    int? usageLimit,
     PostType type,
     PostVisibility visibility,
     @TimestampConverter() DateTime createdAt,
@@ -340,9 +397,16 @@ class __$$VendorPostImplCopyWithImpl<$Res>
     Object? minOrder = freezed,
     Object? maxOrder = freezed,
     Object? currentOrderCount = null,
-    Object? eta = freezed,
-    Object? deliveryTime = freezed,
     Object? deliveryMode = freezed,
+    Object? deliveryTime = freezed,
+    Object? eta = freezed,
+    Object? promoCode = freezed,
+    Object? discountPercentage = freezed,
+    Object? discountAmount = freezed,
+    Object? promoExpiry = freezed,
+    Object? termsAndConditions = freezed,
+    Object? minPurchaseAmount = freezed,
+    Object? usageLimit = freezed,
     Object? type = null,
     Object? visibility = null,
     Object? createdAt = null,
@@ -413,18 +477,46 @@ class __$$VendorPostImplCopyWithImpl<$Res>
             ? _value.currentOrderCount
             : currentOrderCount // ignore: cast_nullable_to_non_nullable
                   as int,
-        eta: freezed == eta
-            ? _value.eta
-            : eta // ignore: cast_nullable_to_non_nullable
-                  as DateTime?,
-        deliveryTime: freezed == deliveryTime
-            ? _value.deliveryTime
-            : deliveryTime // ignore: cast_nullable_to_non_nullable
-                  as String?,
         deliveryMode: freezed == deliveryMode
             ? _value.deliveryMode
             : deliveryMode // ignore: cast_nullable_to_non_nullable
                   as String?,
+        deliveryTime: freezed == deliveryTime
+            ? _value.deliveryTime
+            : deliveryTime // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        eta: freezed == eta
+            ? _value.eta
+            : eta // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        promoCode: freezed == promoCode
+            ? _value.promoCode
+            : promoCode // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        discountPercentage: freezed == discountPercentage
+            ? _value.discountPercentage
+            : discountPercentage // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        discountAmount: freezed == discountAmount
+            ? _value.discountAmount
+            : discountAmount // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        promoExpiry: freezed == promoExpiry
+            ? _value.promoExpiry
+            : promoExpiry // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        termsAndConditions: freezed == termsAndConditions
+            ? _value.termsAndConditions
+            : termsAndConditions // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        minPurchaseAmount: freezed == minPurchaseAmount
+            ? _value.minPurchaseAmount
+            : minPurchaseAmount // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        usageLimit: freezed == usageLimit
+            ? _value.usageLimit
+            : usageLimit // ignore: cast_nullable_to_non_nullable
+                  as int?,
         type: null == type
             ? _value.type
             : type // ignore: cast_nullable_to_non_nullable
@@ -492,9 +584,16 @@ class _$VendorPostImpl implements _VendorPost {
     this.minOrder,
     this.maxOrder,
     this.currentOrderCount = 0,
-    @TimestampNullableConverter() this.eta,
-    this.deliveryTime,
     this.deliveryMode,
+    this.deliveryTime,
+    @TimestampNullableConverter() this.eta,
+    this.promoCode,
+    this.discountPercentage,
+    this.discountAmount,
+    @TimestampNullableConverter() this.promoExpiry,
+    this.termsAndConditions,
+    this.minPurchaseAmount,
+    this.usageLimit,
     this.type = PostType.update,
     this.visibility = PostVisibility.public,
     @TimestampConverter() required this.createdAt,
@@ -561,14 +660,30 @@ class _$VendorPostImpl implements _VendorPost {
   final int currentOrderCount;
   // Progress
   @override
-  @TimestampNullableConverter()
-  final DateTime? eta;
+  final String? deliveryMode;
+  // e.g., "Air Freight"
   @override
   final String? deliveryTime;
   // e.g., "3-5 days"
   @override
-  final String? deliveryMode;
-  // e.g., "Air Freight"
+  @TimestampNullableConverter()
+  final DateTime? eta;
+  // Promotion Specifics
+  @override
+  final String? promoCode;
+  @override
+  final double? discountPercentage;
+  @override
+  final double? discountAmount;
+  @override
+  @TimestampNullableConverter()
+  final DateTime? promoExpiry;
+  @override
+  final String? termsAndConditions;
+  @override
+  final double? minPurchaseAmount;
+  @override
+  final int? usageLimit;
   @override
   @JsonKey()
   final PostType type;
@@ -637,7 +752,7 @@ class _$VendorPostImpl implements _VendorPost {
 
   @override
   String toString() {
-    return 'VendorPost(id: $id, vendorId: $vendorId, vendorName: $vendorName, vendorPhotoUrl: $vendorPhotoUrl, imageUrls: $imageUrls, title: $title, description: $description, details: $details, price: $price, currency: $currency, isPurchasable: $isPurchasable, minOrder: $minOrder, maxOrder: $maxOrder, currentOrderCount: $currentOrderCount, eta: $eta, deliveryTime: $deliveryTime, deliveryMode: $deliveryMode, type: $type, visibility: $visibility, createdAt: $createdAt, expiresAt: $expiresAt, viewIds: $viewIds, likeIds: $likeIds, bookmarkIds: $bookmarkIds, commentCount: $commentCount, shareCount: $shareCount, metadata: $metadata, tags: $tags)';
+    return 'VendorPost(id: $id, vendorId: $vendorId, vendorName: $vendorName, vendorPhotoUrl: $vendorPhotoUrl, imageUrls: $imageUrls, title: $title, description: $description, details: $details, price: $price, currency: $currency, isPurchasable: $isPurchasable, minOrder: $minOrder, maxOrder: $maxOrder, currentOrderCount: $currentOrderCount, deliveryMode: $deliveryMode, deliveryTime: $deliveryTime, eta: $eta, promoCode: $promoCode, discountPercentage: $discountPercentage, discountAmount: $discountAmount, promoExpiry: $promoExpiry, termsAndConditions: $termsAndConditions, minPurchaseAmount: $minPurchaseAmount, usageLimit: $usageLimit, type: $type, visibility: $visibility, createdAt: $createdAt, expiresAt: $expiresAt, viewIds: $viewIds, likeIds: $likeIds, bookmarkIds: $bookmarkIds, commentCount: $commentCount, shareCount: $shareCount, metadata: $metadata, tags: $tags)';
   }
 
   @override
@@ -671,11 +786,25 @@ class _$VendorPostImpl implements _VendorPost {
                 other.maxOrder == maxOrder) &&
             (identical(other.currentOrderCount, currentOrderCount) ||
                 other.currentOrderCount == currentOrderCount) &&
-            (identical(other.eta, eta) || other.eta == eta) &&
-            (identical(other.deliveryTime, deliveryTime) ||
-                other.deliveryTime == deliveryTime) &&
             (identical(other.deliveryMode, deliveryMode) ||
                 other.deliveryMode == deliveryMode) &&
+            (identical(other.deliveryTime, deliveryTime) ||
+                other.deliveryTime == deliveryTime) &&
+            (identical(other.eta, eta) || other.eta == eta) &&
+            (identical(other.promoCode, promoCode) ||
+                other.promoCode == promoCode) &&
+            (identical(other.discountPercentage, discountPercentage) ||
+                other.discountPercentage == discountPercentage) &&
+            (identical(other.discountAmount, discountAmount) ||
+                other.discountAmount == discountAmount) &&
+            (identical(other.promoExpiry, promoExpiry) ||
+                other.promoExpiry == promoExpiry) &&
+            (identical(other.termsAndConditions, termsAndConditions) ||
+                other.termsAndConditions == termsAndConditions) &&
+            (identical(other.minPurchaseAmount, minPurchaseAmount) ||
+                other.minPurchaseAmount == minPurchaseAmount) &&
+            (identical(other.usageLimit, usageLimit) ||
+                other.usageLimit == usageLimit) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.visibility, visibility) ||
                 other.visibility == visibility) &&
@@ -715,9 +844,16 @@ class _$VendorPostImpl implements _VendorPost {
     minOrder,
     maxOrder,
     currentOrderCount,
-    eta,
-    deliveryTime,
     deliveryMode,
+    deliveryTime,
+    eta,
+    promoCode,
+    discountPercentage,
+    discountAmount,
+    promoExpiry,
+    termsAndConditions,
+    minPurchaseAmount,
+    usageLimit,
     type,
     visibility,
     createdAt,
@@ -761,9 +897,16 @@ abstract class _VendorPost implements VendorPost {
     final int? minOrder,
     final int? maxOrder,
     final int currentOrderCount,
-    @TimestampNullableConverter() final DateTime? eta,
-    final String? deliveryTime,
     final String? deliveryMode,
+    final String? deliveryTime,
+    @TimestampNullableConverter() final DateTime? eta,
+    final String? promoCode,
+    final double? discountPercentage,
+    final double? discountAmount,
+    @TimestampNullableConverter() final DateTime? promoExpiry,
+    final String? termsAndConditions,
+    final double? minPurchaseAmount,
+    final int? usageLimit,
     final PostType type,
     final PostVisibility visibility,
     @TimestampConverter() required final DateTime createdAt,
@@ -809,12 +952,27 @@ abstract class _VendorPost implements VendorPost {
   @override
   int get currentOrderCount; // Progress
   @override
-  @TimestampNullableConverter()
-  DateTime? get eta;
+  String? get deliveryMode; // e.g., "Air Freight"
   @override
   String? get deliveryTime; // e.g., "3-5 days"
   @override
-  String? get deliveryMode; // e.g., "Air Freight"
+  @TimestampNullableConverter()
+  DateTime? get eta; // Promotion Specifics
+  @override
+  String? get promoCode;
+  @override
+  double? get discountPercentage;
+  @override
+  double? get discountAmount;
+  @override
+  @TimestampNullableConverter()
+  DateTime? get promoExpiry;
+  @override
+  String? get termsAndConditions;
+  @override
+  double? get minPurchaseAmount;
+  @override
+  int? get usageLimit;
   @override
   PostType get type;
   @override

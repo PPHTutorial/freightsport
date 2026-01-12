@@ -114,9 +114,36 @@ class _RoleBasedScaffoldState extends ConsumerState<RoleBasedScaffold> {
 
     final navItems = _getNavItems(user?.role);
     final location = GoRouterState.of(context).uri.path;
-    final appBarConfig = ref.watch(appBarConfigProvider(location));
 
     _updateSelectedIndex(location, navItems);
+
+    final appBarConfig = ref.watch(appBarConfigProvider(location));
+    final actions = appBarConfig.actions.toList();
+
+    // Ensure Settings and Support are always available via the parent AppBar (Overflow usually)
+    // Only add if not already present to avoid duplicates
+    bool hasSettings = actions.any((a) => a.label == 'Settings');
+    bool hasSupport = actions.any((a) => a.label == 'Support');
+
+    if (!hasSettings) {
+      actions.add(
+        AppBarAction(
+          icon: FontAwesomeIcons.gear,
+          label: 'Settings',
+          onPressed: () => context.push('/settings'),
+        ),
+      );
+    }
+
+    if (!hasSupport) {
+      actions.add(
+        AppBarAction(
+          icon: FontAwesomeIcons.headset,
+          label: 'Support',
+          onPressed: () => context.push('/support'),
+        ),
+      );
+    }
 
     final canPop = context.canPop();
     final isSearching = ref.watch(isSearchingProvider);
@@ -459,10 +486,15 @@ class _RoleBasedScaffoldState extends ConsumerState<RoleBasedScaffold> {
       );
     }
 
-    // 1. If we have actions from the provider, construct them
-    // Logic: Max 2 visible icons. If more, bundling into popover.
+    // Limit visible icons to ensure a clean layout (max 3 total icons including search)
+    final int maxIcons = 3;
+    int currentIconsCount =
+        customActions.length; // Already contains search if enabled
+
     if (actions.isNotEmpty) {
-      if (actions.length <= 2) {
+      final int availableSlots = maxIcons - currentIconsCount;
+
+      if (actions.length <= availableSlots) {
         // Show all
         for (final action in actions) {
           customActions.add(
@@ -474,8 +506,11 @@ class _RoleBasedScaffoldState extends ConsumerState<RoleBasedScaffold> {
           );
         }
       } else {
-        // Show first 2
-        for (var i = 0; i < 2; i++) {
+        // Show some icons and bundle rest into Popover
+        // We need at least one slot for the Popover itself
+        final int iconsToShow = availableSlots - 1;
+
+        for (var i = 0; i < iconsToShow; i++) {
           final action = actions[i];
           customActions.add(
             IconButton(
@@ -485,6 +520,7 @@ class _RoleBasedScaffoldState extends ConsumerState<RoleBasedScaffold> {
             ),
           );
         }
+
         // Bundle rest into Popover
         customActions.add(
           PopupMenuButton<VoidCallback>(
@@ -495,7 +531,7 @@ class _RoleBasedScaffoldState extends ConsumerState<RoleBasedScaffold> {
             ),
             onSelected: (callback) => callback(),
             itemBuilder: (context) {
-              return actions.sublist(2).map((action) {
+              return actions.sublist(iconsToShow).map((action) {
                 return PopupMenuItem(
                   value: action.onPressed,
                   child: Row(

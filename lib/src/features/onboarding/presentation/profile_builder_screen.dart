@@ -73,6 +73,15 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
     'Driver\'s License',
   ];
 
+  // Payout Config
+  final _payoutAccountNameController = TextEditingController();
+  final _payoutAccountNumberController = TextEditingController();
+  final _payoutBankNameController = TextEditingController();
+  final _payoutBranchCodeController = TextEditingController();
+  final _payoutSwiftCodeController = TextEditingController();
+  String _payoutType = 'bank_transfer';
+  String _payoutCurrency = 'USD';
+
   // Verification State
   bool _idUploaded = false;
   bool _isSubmitting = false;
@@ -84,6 +93,32 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
   String? _localBannerPath; // For Company Banner preview
   String? _uploadedLogoUrl;
   String? _uploadedBannerUrl;
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _nameController.dispose();
+    _streetController.dispose();
+    _suburbController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _zipController.dispose();
+    _businessNameController.dispose();
+    _businessRegNumberController.dispose();
+    _businessDescriptionController.dispose();
+    _vehicleTypeController.dispose();
+    _vehicleRegNumberController.dispose();
+    _idNumberController.dispose();
+    _usernameController.dispose();
+
+    // Payout Controllers
+    _payoutAccountNameController.dispose();
+    _payoutAccountNumberController.dispose();
+    _payoutBankNameController.dispose();
+    _payoutBranchCodeController.dispose();
+    _payoutSwiftCodeController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -117,202 +152,261 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
       setState(() {
         final kyc = user.kycData;
 
-        // Helper for safe list conversion from dynamic legacy maps
-        List<Map<String, String>> safeConvertList(dynamic list) {
+        // --- Helper for safe type conversion ---
+        String s(dynamic value) => value?.toString() ?? '';
+
+        // --- Optimized helper for list conversion ---
+        List<Map<String, String>> convertStringList(dynamic list) {
           if (list == null || list is! List) return [];
-          try {
-            return list
-                .map((e) {
-                  if (e is Map) {
-                    return e.map(
-                      (k, v) => MapEntry(k.toString(), v?.toString() ?? ''),
-                    );
-                  }
-                  return <String, String>{};
-                })
-                .where((m) => m.isNotEmpty)
-                .toList();
-          } catch (e) {
-            debugPrint('Error converting list in prefill: $e');
-            return [];
-          }
+          return list
+              .map((e) {
+                if (e is Map) {
+                  return e.map((k, v) => MapEntry(k.toString(), s(v)));
+                }
+                return <String, String>{};
+              })
+              .where((m) => m.isNotEmpty)
+              .toList();
         }
 
-        // 1. Precise Role & Initial Context
-        if (user.role != UserRole.customer) {
+        // --- Role Detection (More robust, even for admins) ---
+        if (user.role == UserRole.vendor || user.role == UserRole.courier) {
           _selectedRole = user.role;
         } else if (user.vendorKyc != null ||
-            (kyc != null &&
-                (kyc['businessName'] != null ||
-                    kyc['name'] != null ||
-                    kyc['vendorServices'] != null))) {
+            kyc?['businessName'] != null ||
+            kyc?['vendorServices'] != null ||
+            kyc?['locations'] != null ||
+            kyc?['warehouses'] != null) {
           _selectedRole = UserRole.vendor;
-        } else if (user.courierKyc != null ||
-            (kyc != null && kyc['vehicleType'] != null)) {
-          _selectedRole = UserRole.courier;
+        } else if (user.role != UserRole.customer) {
+          _selectedRole = user.role;
         }
 
-        // 2. High-Level Profile Fields (Top Level)
-        final phone = user.phoneNumber ?? kyc?['phone']?.toString();
-        if (phone != null && phone.isNotEmpty) _phoneController.text = phone;
+        // --- 1. Top-Level Profile Fields ---
+        final phone = user.phoneNumber ?? kyc?['phone'] ?? kyc?['phoneNumber'];
+        if (phone != null) _phoneController.text = s(phone);
 
         if (user.name.isNotEmpty) _nameController.text = user.name;
         if (user.username.isNotEmpty) _usernameController.text = user.username;
 
-        // 3. Address Data (Merging Field-by-Field)
+        // --- 2. Primary/Personal Address ---
         final addr = user.address;
         _streetController.text = (addr?.street.isNotEmpty ?? false)
             ? addr!.street
-            : (kyc?['street'] ?? kyc?['address'] ?? '').toString();
+            : s(kyc?['street'] ?? kyc?['address'] ?? kyc?['fullAddress']);
+
         _suburbController.text = (addr?.suburb.isNotEmpty ?? false)
             ? addr!.suburb
-            : (kyc?['suburb'] ?? '').toString();
+            : s(kyc?['suburb'] ?? '');
+
         _cityController.text = (addr?.city.isNotEmpty ?? false)
             ? addr!.city
-            : (kyc?['city'] ?? '').toString();
+            : s(kyc?['city'] ?? '');
+
         _stateController.text = (addr?.state.isNotEmpty ?? false)
             ? addr!.state
-            : (kyc?['state'] ?? '').toString();
+            : s(kyc?['state'] ?? kyc?['region'] ?? '');
+
         _zipController.text = (addr?.zip.isNotEmpty ?? false)
             ? addr!.zip
-            : (kyc?['zip'] ?? '').toString();
+            : s(kyc?['zip'] ?? kyc?['postalCode'] ?? '');
 
-        if (addr != null && addr.country.isNotEmpty) {
-          try {
-            _selectedCountry = Country.all.firstWhere(
-              (c) => c.name == addr.country || c.code == addr.countryCode,
-            );
-          } catch (_) {}
-        } else if (kyc?['country'] != null) {
+        // Country matching
+        final countryVal = addr?.country ?? kyc?['country'];
+        final countryCodeVal = addr?.countryCode ?? kyc?['countryCode'];
+        if (countryVal != null || countryCodeVal != null) {
           try {
             _selectedCountry = Country.all.firstWhere(
               (c) =>
-                  c.name == kyc!['country']?.toString() ||
-                  c.code == kyc['countryCode']?.toString(),
+                  s(c.name).toLowerCase() == s(countryVal).toLowerCase() ||
+                  s(c.code).toLowerCase() == s(countryCodeVal).toLowerCase(),
             );
           } catch (_) {}
         }
 
-        // 4. Identity Data (Merging Field-by-Field)
+        // --- 3. Identity Data ---
         final ident = user.identity;
         _selectedDocType = (ident?.idType?.isNotEmpty ?? false)
             ? ident!.idType
-            : kyc?['idType']?.toString();
+            : s(kyc?['idType'] ?? '');
+        if (_selectedDocType!.isEmpty) _selectedDocType = null;
+
         _idNumberController.text = (ident?.idNumber?.isNotEmpty ?? false)
             ? ident!.idNumber!
-            : (kyc?['idNumber'] ?? '').toString();
+            : s(kyc?['idNumber'] ?? '');
+
         _idUploaded =
             (ident?.idUploaded ?? false) || kyc?['idUploaded'] == true;
         _uploadedIdUrl = (ident?.idUrl?.isNotEmpty ?? false)
             ? ident!.idUrl
-            : kyc?['idUrl']?.toString();
+            : s(kyc?['idUrl'] ?? '');
 
-        // 5. Role Specific KYC (Merged deep copy)
+        // --- 4. Vendor Specific Data ---
         if (_selectedRole == UserRole.vendor) {
           final vKyc = user.vendorKyc;
-          // Business Name
+
           _businessNameController.text =
               (vKyc?.businessName.isNotEmpty ?? false)
               ? vKyc!.businessName
-              : (kyc?['businessName'] ?? kyc?['name'] ?? '').toString();
+              : s(kyc?['businessName'] ?? kyc?['companyName'] ?? kyc?['name']);
 
-          // Registration Number
           _businessRegNumberController.text =
               (vKyc?.businessRegNumber.isNotEmpty ?? false)
               ? vKyc!.businessRegNumber
-              : (kyc?['businessRegNumber'] ?? '').toString();
+              : s(kyc?['businessRegNumber'] ?? kyc?['regNumber'] ?? '');
 
-          // Description
           _businessDescriptionController.text =
               (vKyc?.businessDescription.isNotEmpty ?? false)
               ? vKyc!.businessDescription
-              : (kyc?['businessDescription'] ?? kyc?['description'] ?? '')
-                    .toString();
+              : s(kyc?['businessDescription'] ?? kyc?['description'] ?? '');
 
-          // Lists Prefill (Safe Conversion with Legacy Fallbacks)
+          // Contact Numbers
           if (vKyc != null && vKyc.vendorPhones.isNotEmpty) {
             _vendorPhones = List<Map<String, String>>.from(vKyc.vendorPhones);
-          } else if (kyc?['vendorPhones'] != null || kyc?['phones'] != null) {
-            _vendorPhones = safeConvertList(
-              kyc!['vendorPhones'] ?? kyc['phones'],
+          } else {
+            _vendorPhones = convertStringList(
+              kyc?['vendorPhones'] ?? kyc?['phones'],
             );
           }
 
+          // Offices & Warehouses (Complex dynamic mapping)
           if (vKyc != null && vKyc.vendorAddresses.isNotEmpty) {
-            _vendorAddresses = List<Map<String, String>>.from(
+            _vendorAddresses = List<Map<String, dynamic>>.from(
               vKyc.vendorAddresses,
             );
-          } else if (kyc?['vendorAddresses'] != null ||
-              kyc?['locations'] != null) {
-            _vendorAddresses = safeConvertList(
-              kyc!['vendorAddresses'] ?? kyc['locations'],
-            );
+          } else {
+            final legacyLocations =
+                kyc?['vendorAddresses'] ??
+                kyc?['locations'] ??
+                kyc?['warehouses'];
+            if (legacyLocations is List) {
+              _vendorAddresses = legacyLocations
+                  .map((loc) {
+                    if (loc is Map) {
+                      // Robust field mapping for nested addresses
+                      return {
+                        'label': s(
+                          loc['label'] ?? loc['locationName'] ?? loc['name'],
+                        ),
+                        'country': s(loc['country']),
+                        'street': s(loc['street'] ?? loc['address']),
+                        'city': s(loc['city']),
+                        'state': s(loc['state'] ?? loc['region']),
+                        'zip': s(loc['zip'] ?? loc['postalCode']),
+                        'phones':
+                            (loc['phones'] ??
+                                    loc['phoneNumber'] ??
+                                    loc['contacts'])
+                                is List
+                            ? (loc['phones'] ??
+                                      loc['phoneNumber'] ??
+                                      loc['contacts'] as List)
+                                  .map((p) => s(p))
+                                  .toList()
+                            : (loc['phones'] ??
+                                      loc['phoneNumber'] ??
+                                      loc['contacts'] != null
+                                  ? [
+                                      s(
+                                        loc['phones'] ??
+                                            loc['phoneNumber'] ??
+                                            loc['contacts'],
+                                      ),
+                                    ]
+                                  : <String>[]),
+                      };
+                    }
+                    return <String, dynamic>{};
+                  })
+                  .where((m) => m.isNotEmpty)
+                  .toList();
+            }
           }
 
+          // Socials
           if (vKyc != null && vKyc.vendorSocials.isNotEmpty) {
             _vendorSocials = List<Map<String, String>>.from(vKyc.vendorSocials);
-          } else if (kyc?['vendorSocials'] != null || kyc?['socials'] != null) {
-            _vendorSocials = safeConvertList(
-              kyc!['vendorSocials'] ?? kyc['socials'],
+          } else {
+            _vendorSocials = convertStringList(
+              kyc?['vendorSocials'] ?? kyc?['socials'],
             );
           }
 
+          // FAQs
           if (vKyc != null && vKyc.vendorFAQs.isNotEmpty) {
             _vendorFAQs = List<Map<String, String>>.from(vKyc.vendorFAQs);
-          } else if (kyc?['vendorFAQs'] != null || kyc?['faqs'] != null) {
-            _vendorFAQs = safeConvertList(kyc!['vendorFAQs'] ?? kyc['faqs']);
+          } else {
+            _vendorFAQs = convertStringList(kyc?['vendorFAQs'] ?? kyc?['faqs']);
           }
 
+          // Routes
           if (vKyc != null && vKyc.vendorRoutes.isNotEmpty) {
             _vendorRoutes = List<Map<String, String>>.from(vKyc.vendorRoutes);
-          } else if (kyc?['vendorRoutes'] != null || kyc?['routes'] != null) {
-            _vendorRoutes = safeConvertList(
-              kyc!['vendorRoutes'] ?? kyc['routes'],
+          } else {
+            _vendorRoutes = convertStringList(
+              kyc?['vendorRoutes'] ?? kyc?['routes'],
             );
           }
 
+          // Rates
           if (vKyc != null && vKyc.vendorRates.isNotEmpty) {
             _vendorRates = List<Map<String, String>>.from(vKyc.vendorRates);
-          } else if (kyc?['vendorRates'] != null || kyc?['rates'] != null) {
-            _vendorRates = safeConvertList(kyc!['vendorRates'] ?? kyc['rates']);
+          } else {
+            _vendorRates = convertStringList(
+              kyc?['vendorRates'] ?? kyc?['rates'],
+            );
           }
 
+          // Services
           if (vKyc != null && vKyc.vendorServices.isNotEmpty) {
             _vendorServices = List<String>.from(vKyc.vendorServices);
-          } else if (kyc?['vendorServices'] != null ||
-              kyc?['services'] != null) {
-            _vendorServices = List<String>.from(
-              ((kyc!['vendorServices'] ?? kyc['services']) as List).map(
-                (e) => e.toString(),
-              ),
-            );
+          } else {
+            final services = kyc?['vendorServices'] ?? kyc?['services'];
+            if (services is List) {
+              _vendorServices = services.map((e) => s(e)).toList();
+            }
           }
         } else if (_selectedRole == UserRole.courier) {
           final cKyc = user.courierKyc;
           _vehicleTypeController.text = (cKyc?.vehicleType.isNotEmpty ?? false)
               ? cKyc!.vehicleType
-              : (kyc?['vehicleType'] ?? '').toString();
+              : s(kyc?['vehicleType'] ?? '');
           _vehicleRegNumberController.text =
               (cKyc?.vehicleRegNumber.isNotEmpty ?? false)
               ? cKyc!.vehicleRegNumber
-              : (kyc?['vehicleRegNumber'] ?? '').toString();
+              : s(kyc?['vehicleRegNumber'] ?? '');
         }
 
-        // 6. Visual Branded Assets
+        // --- 5. Branded Assets ---
         _uploadedLogoUrl =
-            user.companyLogo ??
-            kyc?['logo']?.toString() ??
-            kyc?['companyLogo']?.toString();
+            user.companyLogo ?? kyc?['logo'] ?? kyc?['companyLogo'];
         _uploadedBannerUrl =
-            user.companyBanner ??
-            kyc?['banner']?.toString() ??
-            kyc?['companyBanner']?.toString();
+            user.companyBanner ?? kyc?['banner'] ?? kyc?['companyBanner'];
 
-        // Restore onboarding step if not jumping to a specific one
-        if (widget.initialStep == 0 &&
-            kyc != null &&
-            kyc['onboardingStep'] != null) {
-          _currentStep = int.tryParse(kyc['onboardingStep'].toString()) ?? 0;
+        // --- 6. Payout Data ---
+        final pay = user.payoutDetails;
+        if (pay != null) {
+          _payoutAccountNameController.text = pay.accountName;
+          _payoutAccountNumberController.text = pay.accountNumber;
+          _payoutBankNameController.text = pay.bankName;
+          _payoutBranchCodeController.text = pay.branchCode;
+          _payoutSwiftCodeController.text = pay.swiftCode;
+          _payoutType = pay.type;
+          _payoutCurrency = pay.currency;
+        } else if (kyc?['payout'] != null) {
+          final p = kyc!['payout'];
+          _payoutAccountNameController.text = s(p['accountName']);
+          _payoutAccountNumberController.text = s(p['accountNumber']);
+          _payoutBankNameController.text = s(p['bankName']);
+          _payoutBranchCodeController.text = s(p['branchCode']);
+          _payoutSwiftCodeController.text = s(p['swiftCode']);
+          _payoutType = s(p['type']).isEmpty ? 'bank_transfer' : s(p['type']);
+          _payoutCurrency = s(p['currency']).isEmpty ? 'USD' : s(p['currency']);
+        }
+
+        // --- 7. Step Restoration ---
+        if (widget.initialStep == 0 && kyc?['onboardingStep'] != null) {
+          _currentStep = int.tryParse(kyc!['onboardingStep'].toString()) ?? 0;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_pageController.hasClients) {
               _pageController.jumpToPage(_currentStep);
@@ -425,7 +519,6 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
           );
           return;
         }
-        // _vendorRates is optional? or mandatory? "rest needs at least 1 input each"
         if (_vendorRates.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -459,7 +552,53 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
       }
     }
 
-    if (_currentStep == 2) {
+    // Step 2: Payout Setup (Only for Vendor/Courier)
+    if (_currentStep == 2 &&
+        (_selectedRole == UserRole.vendor ||
+            _selectedRole == UserRole.courier)) {
+      // Payout Step Validation
+      if (_payoutType == 'bank_transfer') {
+        if (_payoutBankNameController.text.isEmpty ||
+            _payoutAccountNameController.text.isEmpty ||
+            _payoutAccountNumberController.text.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please fill all mandatory bank details.'),
+            ),
+          );
+          return;
+        }
+      } else if (_payoutType == 'mobile_money') {
+        if (_payoutBankNameController.text.isEmpty ||
+            _payoutAccountNameController.text.isEmpty ||
+            _payoutAccountNumberController.text.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please fill all mandatory mobile money details.'),
+            ),
+          );
+          return;
+        }
+      } else {
+        // Crypto
+        if (_payoutBankNameController.text.isEmpty ||
+            _payoutAccountNumberController.text.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please fill all mandatory wallet details.'),
+            ),
+          );
+          return;
+        }
+      }
+    }
+
+    // Determine Logic Index for Verification
+    final isVendorOrCourier =
+        _selectedRole == UserRole.vendor || _selectedRole == UserRole.courier;
+    final verificationStepIndex = isVendorOrCourier ? 3 : 2;
+
+    if (_currentStep == verificationStepIndex) {
       if (_selectedDocType == null || _idNumberController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -477,22 +616,23 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
         );
         return;
       }
-
-      // Vendor Specific Verification (Optional)
-      /* if (_selectedRole == UserRole.vendor) {
-        if (_localRegDocPath == null || _localLicenseDocPath == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Vendors must upload Business Registration and Operating License.',
-              ),
-            ),
-          );
-          return;
-        }
-      } */
     }
 
+    if (_currentStep < verificationStepIndex) {
+      // Transition Logic
+      _saveProgress();
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _currentStep++);
+    } else {
+      _completeProfile();
+    }
+  }
+
+  // Renamed or adjusted for clarity, removing old block
+  /*
     if (_currentStep < 2) {
       if (widget.initialStep == 1 && _currentStep == 1) {
         _completeProfile();
@@ -507,7 +647,7 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
     } else {
       _completeProfile();
     }
-  }
+  */
 
   Future<void> _completeProfile() async {
     setState(() => _isSubmitting = true);
@@ -558,6 +698,20 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
           role: _selectedRole!,
           phoneNumber: _phoneController.text.trim(),
           isProfileComplete: true,
+          // Payout Details
+          payoutDetails:
+              (_selectedRole == UserRole.vendor ||
+                  _selectedRole == UserRole.courier)
+              ? PayoutDetails(
+                  accountName: _payoutAccountNameController.text.trim(),
+                  accountNumber: _payoutAccountNumberController.text.trim(),
+                  bankName: _payoutBankNameController.text.trim(),
+                  branchCode: _payoutBranchCodeController.text.trim(),
+                  swiftCode: _payoutSwiftCodeController.text.trim(),
+                  type: _payoutType,
+                  currency: _payoutCurrency,
+                )
+              : null,
           verificationStatus: uploadSuccess
               ? VerificationStatus.pending
               : VerificationStatus.unverified,
@@ -605,7 +759,7 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
                   vehicleRegNumber: _vehicleRegNumberController.text.trim(),
                 )
               : null,
-          kycData: null, // CLEAR LEGACY DATA ON COMPLETE
+          // kycData: null, // REMOVED: Prevent data loss until migration verified
         );
 
         debugPrint('DEBUG: Updating user with ID: ${updatedUser.id}');
@@ -684,20 +838,52 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Construct pages conditionally
+    List<Widget> pages = [_buildRoleSelectionStep(), _buildDetailsStep()];
+
+    if (_selectedRole == UserRole.vendor || _selectedRole == UserRole.courier) {
+      pages.add(
+        Padding(
+          padding: EdgeInsets.all(16.w),
+          child: SingleChildScrollView(
+            child: _PayoutSetupStep(
+              accountNameController: _payoutAccountNameController,
+              accountNumberController: _payoutAccountNumberController,
+              bankNameController: _payoutBankNameController,
+              branchCodeController: _payoutBranchCodeController,
+              swiftCodeController: _payoutSwiftCodeController,
+              selectedType: _payoutType,
+              selectedCurrency: _payoutCurrency,
+              onTypeChanged: (val) {
+                if (val != null) setState(() => _payoutType = val);
+              },
+              onCurrencyChanged: (val) {
+                if (val != null) setState(() => _payoutCurrency = val);
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    pages.add(_buildVerificationStep());
+
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.initialStep != 0 ? 'Update Profile' : 'Setup Profile',
+        ),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(), // Keep or remove? Header has step indicator which matches logic.
             Expanded(
               child: PageView(
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildRoleSelectionStep(),
-                  _buildDetailsStep(),
-                  _buildVerificationStep(),
-                ],
+                children: pages,
               ),
             ),
             _buildBottomBar(),
@@ -2422,7 +2608,20 @@ class _ProfileBuilderScreenState extends ConsumerState<ProfileBuilderScreen> {
                 vehicleRegNumber: _vehicleRegNumberController.text.trim(),
               )
             : null,
-        kycData: null, // CLEAR LEGACY DATA ON AUTO-SAVE
+        payoutDetails:
+            (_selectedRole == UserRole.vendor ||
+                _selectedRole == UserRole.courier)
+            ? PayoutDetails(
+                accountName: _payoutAccountNameController.text.trim(),
+                accountNumber: _payoutAccountNumberController.text.trim(),
+                bankName: _payoutBankNameController.text.trim(),
+                branchCode: _payoutBranchCodeController.text.trim(),
+                swiftCode: _payoutSwiftCodeController.text.trim(),
+                type: _payoutType,
+                currency: _payoutCurrency,
+              )
+            : null,
+        // kycData: null, // REMOVED: Prevent data loss until migration verified
       );
 
       await ref.read(authRepositoryProvider).updateUser(updatedUser);
@@ -2533,6 +2732,181 @@ class _RoleCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+// ... (Existing Imports)
+
+// Add Payout Controllers to State in _ProfileBuilderScreenState
+/*
+  // Payout Config
+  final _payoutAccountNameController = TextEditingController();
+  final _payoutAccountNumberController = TextEditingController();
+  final _payoutBankNameController = TextEditingController();
+  final _payoutBranchCodeController = TextEditingController();
+  final _payoutSwiftCodeController = TextEditingController();
+  String _payoutType = 'bank_transfer'; // bank_transfer, mobile_money, crypto_wallet
+  String _payoutCurrency = 'USD';
+*/
+
+// ... (Existing Code)
+
+class _PayoutSetupStep extends StatelessWidget {
+  final TextEditingController accountNameController;
+  final TextEditingController accountNumberController;
+  final TextEditingController bankNameController;
+  final TextEditingController branchCodeController;
+  final TextEditingController swiftCodeController;
+  final String selectedType;
+  final String selectedCurrency;
+  final ValueChanged<String?> onTypeChanged;
+  final ValueChanged<String?> onCurrencyChanged;
+
+  const _PayoutSetupStep({
+    required this.accountNameController,
+    required this.accountNumberController,
+    required this.bankNameController,
+    required this.branchCodeController,
+    required this.swiftCodeController,
+    required this.selectedType,
+    required this.selectedCurrency,
+    required this.onTypeChanged,
+    required this.onCurrencyChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Payout Setup',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: selectedType,
+          items: const [
+            DropdownMenuItem(
+              value: 'bank_transfer',
+              child: Text('Bank Transfer'),
+            ),
+            DropdownMenuItem(
+              value: 'mobile_money',
+              child: Text('Mobile Money'),
+            ),
+            DropdownMenuItem(
+              value: 'crypto_wallet',
+              child: Text('Crypto Wallet'),
+            ),
+          ],
+          onChanged: onTypeChanged,
+          decoration: InputDecoration(
+            labelText: 'Payout Method',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: selectedCurrency,
+          items: const [
+            DropdownMenuItem(value: 'USD', child: Text('USD')),
+            DropdownMenuItem(value: 'GHS', child: Text('GHS')),
+            DropdownMenuItem(value: 'NGN', child: Text('NGN')),
+            DropdownMenuItem(value: 'KES', child: Text('KES')),
+            DropdownMenuItem(value: 'ZAR', child: Text('ZAR')),
+            DropdownMenuItem(value: 'BTC', child: Text('BTC')),
+            DropdownMenuItem(value: 'USDT', child: Text('USDT')),
+          ],
+          onChanged: onCurrencyChanged,
+          decoration: InputDecoration(
+            labelText: 'Currency',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 16),
+        if (selectedType == 'bank_transfer') ...[
+          TextFormField(
+            controller: bankNameController,
+            decoration: InputDecoration(
+              labelText: 'Bank Name',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextFormField(
+            controller: accountNameController,
+            decoration: InputDecoration(
+              labelText: 'Account Name',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextFormField(
+            controller: accountNumberController,
+            decoration: InputDecoration(
+              labelText: 'Account Number',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextFormField(
+            controller: branchCodeController,
+            decoration: InputDecoration(
+              labelText: 'Branch Code (Optional)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextFormField(
+            controller: swiftCodeController,
+            decoration: InputDecoration(
+              labelText: 'SWIFT Code (Optional)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ] else if (selectedType == 'mobile_money') ...[
+          TextFormField(
+            controller: bankNameController,
+            decoration: InputDecoration(
+              labelText: 'Network (e.g. MTN)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextFormField(
+            controller: accountNameController,
+            decoration: InputDecoration(
+              labelText: 'Account Name',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextFormField(
+            controller: accountNumberController,
+            decoration: InputDecoration(
+              labelText: 'Phone Number',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ] else ...[
+          TextFormField(
+            controller: bankNameController,
+            decoration: InputDecoration(
+              labelText: 'Wallet Provider (e.g. Binance)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 12),
+          TextFormField(
+            controller: accountNumberController,
+            decoration: InputDecoration(
+              labelText: 'Wallet Address',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

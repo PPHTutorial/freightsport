@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:rightlogistics/src/features/social/domain/social_models.dart';
 import 'package:rightlogistics/src/features/social/presentation/widgets/image_zoom_screen.dart';
 import 'package:rightlogistics/src/features/social/presentation/providers/social_providers.dart';
@@ -8,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rightlogistics/src/features/authentication/domain/user_model.dart';
 import 'package:rightlogistics/src/core/utils/date_utils.dart';
+import 'package:share_plus/share_plus.dart';
 
 class SocialPostDetailScreen extends ConsumerStatefulWidget {
   final VendorPost post;
@@ -52,52 +54,123 @@ class _SocialPostDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    final postAsync = ref.watch(postProvider(widget.post.id));
+    final activePost = postAsync.value ?? widget.post;
     final commentsAsync = ref.watch(postCommentsProvider(widget.post.id));
     final user = ref.watch(currentUserProvider);
-    final isLiked = widget.post.likeIds.contains(user?.id);
-    final isBookmarked = widget.post.bookmarkIds.contains(user?.id);
+    final isLiked = activePost.likeIds.contains(user?.id);
+    final isBookmarked = activePost.bookmarkIds.contains(user?.id);
+    final isFollowing =
+        user?.followingIds.contains(activePost.vendorId) ?? false;
 
     return Scaffold(
-      /* appBar: AppBar(
-        title: Text(
-          'Post Details',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ), */
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(
         children: [
           Expanded(
             child: CustomScrollView(
               slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  floating: true,
+                  expandedHeight: activePost.imageUrls.isNotEmpty ? 350 : 0,
+                  elevation: 0,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  title: activePost.imageUrls.isEmpty
+                      ? Text(
+                          activePost.type.name
+                              .replaceAll(RegExp(r'_|^'), ' ')
+                              .toUpperCase(),
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            letterSpacing: 1,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        )
+                      : null,
+                  flexibleSpace: activePost.imageUrls.isNotEmpty
+                      ? FlexibleSpaceBar(
+                          background: _buildImageSection(
+                            context,
+                            activePost,
+                            isAppBar: true,
+                          ),
+                        )
+                      : null,
+                  actions: [
+                    IconButton(
+                      icon: Icon(
+                        isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                        color: isBookmarked ? Colors.amber[700] : null,
+                      ),
+                      onPressed: () {
+                        if (user == null) return;
+                        if (isBookmarked) {
+                          ref
+                              .read(socialRepositoryProvider)
+                              .unbookmarkPost(activePost.id, user.id);
+                        } else {
+                          ref
+                              .read(socialRepositoryProvider)
+                              .bookmarkPost(activePost.id, user.id);
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined),
+                      onPressed: () {
+                        Share.share(
+                          'Check out this ${activePost.type.name} from ${activePost.vendorName} on RightLogistics!\n\n${activePost.description}',
+                        );
+                        ref
+                            .read(socialRepositoryProvider)
+                            .sharePost(activePost.id);
+                      },
+                    ),
+                  ],
+                ),
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
-                      // Header & Content (from previous implementation)
-                      _buildHeader(context, user),
-                      if (widget.post.imageUrls.isNotEmpty)
-                        _buildImageSection(context),
-                      _buildContentSection(context),
+                      _buildHeader(context, user, activePost, isFollowing),
+                      _buildContentSection(context, activePost, user),
                       const SizedBox(height: 16),
                       // Engagement Bar
                       _buildEngagementBar(
                         context,
                         ref,
+                        activePost,
                         isLiked,
-                        isBookmarked,
                         user?.id,
                       ),
-                      const Divider(thickness: 8),
+                      const SizedBox(height: 24),
                       Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          'Comments (${widget.post.commentCount})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'COMMENTS (${activePost.commentCount})',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
@@ -150,8 +223,8 @@ class _SocialPostDetailScreenState
                   ),
                   error: (e, _) => SliverToBoxAdapter(child: Text('Error: $e')),
                 ),
-                // Extra padding for bottom input
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                // Padding for bottom input
+                const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
               ],
             ),
           ),
@@ -169,40 +242,58 @@ class _SocialPostDetailScreenState
     if (userId == null) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.paddingOf(context).bottom + 12,
+        top: 12,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, -2),
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
           ),
-        ],
+        ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_replyingToName != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                children: [
-                  Text(
-                    'Replying to $_replyingToName',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).primaryColor,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Replying to @$_replyingToName',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: _cancelReply,
-                    icon: const Icon(Icons.close, size: 16),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _cancelReply,
+                      child: Icon(
+                        Icons.close,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           Row(
@@ -210,44 +301,59 @@ class _SocialPostDetailScreenState
               Expanded(
                 child: TextField(
                   controller: _commentController,
+                  maxLines: 4,
+                  minLines: 1,
+                  style: const TextStyle(fontSize: 14),
                   decoration: InputDecoration(
                     hintText: _replyingToName != null
-                        ? 'Reply to $_replyingToName...'
-                        : 'Write a comment...',
+                        ? 'Reply to @$_replyingToName...'
+                        : 'Share your thoughts...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                      borderSide: BorderSide.none,
                     ),
                     filled: true,
+                    fillColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                onPressed: () {
-                  final content = _commentController.text.trim();
-                  if (content.isEmpty) return;
+              const SizedBox(width: 12),
+              CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                child: IconButton(
+                  onPressed: () {
+                    final content = _commentController.text.trim();
+                    if (content.isEmpty) return;
 
-                  final newComment = PostComment(
-                    id: '', // Generated by repo
-                    postId: widget.post.id,
-                    parentId: _replyingToId,
-                    userId: userId,
-                    userName: 'Me', // Ideally from user model
-                    userPhotoUrl: null, // Ideally from user model
-                    content: content,
-                    createdAt: DateTime.now(),
-                    tags: [], // Parsing tags could happen here
-                  );
+                    final newComment = PostComment(
+                      id: '',
+                      postId: widget.post.id,
+                      parentId: _replyingToId,
+                      userId: userId,
+                      userName: 'Me',
+                      userPhotoUrl: null,
+                      content: content,
+                      createdAt: DateTime.now(),
+                      tags: [],
+                    );
 
-                  ref.read(socialRepositoryProvider).addComment(newComment);
-                  _commentController.clear();
-                  _cancelReply();
-                },
-                icon: const Icon(Icons.send),
+                    ref.read(socialRepositoryProvider).addComment(newComment);
+                    _commentController.clear();
+                    _cancelReply();
+                    FocusScope.of(context).unfocus();
+                  },
+                  icon: const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ],
           ),
@@ -256,17 +362,23 @@ class _SocialPostDetailScreenState
     );
   }
 
-  Widget _buildHeader(BuildContext context, UserModel? user) {
+  Widget _buildHeader(
+    BuildContext context,
+    UserModel? user,
+    VendorPost post,
+    bool isFollowing,
+  ) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(24.0),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundImage: widget.post.vendorPhotoUrl != null
-                ? CachedNetworkImageProvider(widget.post.vendorPhotoUrl!)
+            radius: 20,
+            backgroundImage: post.vendorPhotoUrl != null
+                ? CachedNetworkImageProvider(post.vendorPhotoUrl!)
                 : null,
-            child: widget.post.vendorPhotoUrl == null
-                ? Text(widget.post.vendorName[0])
+            child: post.vendorPhotoUrl == null
+                ? Text(post.vendorName[0])
                 : null,
           ),
           const SizedBox(width: 12),
@@ -274,55 +386,55 @@ class _SocialPostDetailScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.post.vendorName,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                post.vendorName,
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
               Text(
                 'Logistics Expert',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
+                  fontSize: 11,
                 ),
               ),
             ],
           ),
           const Spacer(),
-          if (user?.id != null && user!.id != widget.post.vendorId)
-            OutlinedButton(
+          if (user?.id != null && user!.id != post.vendorId)
+            TextButton(
               onPressed: () {
-                final isFollowing = user.followingIds.contains(
-                  widget.post.vendorId,
-                );
                 if (isFollowing) {
                   ref
                       .read(socialRepositoryProvider)
-                      .unfollowUser(user.id, widget.post.vendorId);
+                      .unfollowUser(user.id, post.vendorId);
                 } else {
                   ref
                       .read(socialRepositoryProvider)
-                      .followUser(user.id, widget.post.vendorId);
+                      .followUser(user.id, post.vendorId);
                 }
               },
-              style: OutlinedButton.styleFrom(
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                backgroundColor: isFollowing
+                    ? null
+                    : Theme.of(context).colorScheme.primary,
+                foregroundColor: isFollowing
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
-                ),
-                side: BorderSide(
-                  color: user.followingIds.contains(widget.post.vendorId)
-                      ? Theme.of(context).colorScheme.outline
-                      : Theme.of(context).colorScheme.primary,
+                  side: isFollowing
+                      ? BorderSide(color: Theme.of(context).colorScheme.primary)
+                      : BorderSide.none,
                 ),
               ),
               child: Text(
-                user.followingIds.contains(widget.post.vendorId)
-                    ? 'Followed'
-                    : 'Follow',
-                style: TextStyle(
-                  color: user.followingIds.contains(widget.post.vendorId)
-                      ? Theme.of(context).colorScheme.onSurfaceVariant
-                      : Theme.of(context).colorScheme.primary,
+                isFollowing ? 'Following' : 'Follow',
+                style: const TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ),
@@ -331,65 +443,231 @@ class _SocialPostDetailScreenState
     );
   }
 
-  Widget _buildImageSection(BuildContext context) {
+  Widget _buildImageSection(
+    BuildContext context,
+    VendorPost post, {
+    bool isAppBar = false,
+  }) {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ImageZoomScreen(imageUrls: widget.post.imageUrls),
+            builder: (_) => ImageZoomScreen(imageUrls: post.imageUrls),
           ),
         );
       },
       child: Hero(
-        tag: 'post_image_${widget.post.id}',
-        child: CachedNetworkImage(
-          imageUrl: widget.post.imageUrls[0],
-          width: double.infinity,
-          height: 300,
-          fit: BoxFit.cover,
+        tag: 'post_image_${post.id}',
+        child: Container(
+          margin: isAppBar
+              ? EdgeInsets.zero
+              : const EdgeInsets.symmetric(horizontal: 24),
+          decoration: BoxDecoration(
+            borderRadius: isAppBar
+                ? BorderRadius.zero
+                : BorderRadius.circular(24),
+            boxShadow: isAppBar
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+          ),
+          child: ClipRRect(
+            borderRadius: isAppBar
+                ? BorderRadius.zero
+                : BorderRadius.circular(24),
+            child: CachedNetworkImage(
+              imageUrl: post.imageUrls[0],
+              width: double.infinity,
+              height: isAppBar ? double.infinity : 350,
+              fit: BoxFit.cover,
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildContentSection(BuildContext context) {
+  Widget _buildContentSection(
+    BuildContext context,
+    VendorPost post,
+    UserModel? user,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.post.title != null) ...[
-            Text(
-              widget.post.title!,
-              style: GoogleFonts.outfit(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: colorScheme.primary,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (post.title != null) ...[
+                      Text(
+                        post.title!,
+                        style: GoogleFonts.outfit(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.onSurface,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Text(
+                      post.description,
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.6,
+                        color: colorScheme.onSurface.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          Text(
-            widget.post.description,
-            style: const TextStyle(fontSize: 16, height: 1.5),
+              if (post.price > 0) ...[
+                const SizedBox(width: 12),
+                Text(
+                  '${post.currency}${post.price.toStringAsFixed(0)}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: colorScheme.primary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ],
           ),
-          const SizedBox(height: 24),
-          if (widget.post.details != null) ...[
+          if (post.details != null) ...[
+            const SizedBox(height: 16),
             Text(
               'SPECIFICATIONS',
               style: GoogleFonts.outfit(
                 fontWeight: FontWeight.w900,
-                fontSize: 12,
+                fontSize: 11,
                 letterSpacing: 1.5,
-                color: colorScheme.onSurfaceVariant,
+                color: colorScheme.primary,
               ),
             ),
             const SizedBox(height: 12),
-            Text(widget.post.details!),
-            const SizedBox(height: 24),
+            Text(
+              post.details!,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
           ],
-          _buildDataGrid(colorScheme),
+          if (post.type == PostType.promotion) ...[
+            const SizedBox(height: 24),
+            _buildPromoBanner(context, post),
+          ],
+          const SizedBox(height: 32),
+          _buildDataGrid(colorScheme, post),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoBanner(BuildContext context, VendorPost post) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_offer_rounded, color: Colors.amber),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'SPECIAL OFFER',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: 1.5,
+                    color: Colors.amber[900],
+                  ),
+                ),
+              ),
+              if (post.discountPercentage != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '-${post.discountPercentage!.toStringAsFixed(0)}%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: post.promoCode ?? ''));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Code copied to clipboard!')),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.withOpacity(0.5)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    post.promoCode ?? 'NO CODE',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black87,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const Icon(Icons.copy_rounded, size: 20, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+          if (post.promoExpiry != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Expires: ${DateUtilsHelper.formatFullDate(post.promoExpiry!)}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.amber[900],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -398,81 +676,151 @@ class _SocialPostDetailScreenState
   Widget _buildEngagementBar(
     BuildContext context,
     WidgetRef ref,
+    VendorPost post,
     bool isLiked,
-    bool isBookmarked,
     String? userId,
   ) {
     final repo = ref.read(socialRepositoryProvider);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _EngagementButton(
-          icon: isLiked ? Icons.favorite : Icons.favorite_border,
-          label: 'Like',
-          color: isLiked ? Colors.red : null,
-          onTap: () {
-            if (userId == null) return;
-            if (isLiked) {
-              repo.unlikePost(widget.post.id, userId);
-            } else {
-              repo.likePost(widget.post.id, userId);
-            }
-          },
-        ),
-        _EngagementButton(
-          icon: Icons.comment_outlined,
-          label: 'Comment',
-          onTap: () {
-            // Focus input?
-          },
-        ),
-        _EngagementButton(
-          icon: Icons.share_outlined,
-          label: 'Share',
-          onTap: () {},
-        ),
-        _EngagementButton(
-          icon: isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-          label: 'Save',
-          onTap: () {},
-        ),
-      ],
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              _EngagementButton(
+                icon: isLiked
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                label: '${post.likeIds.length}',
+                color: isLiked ? Colors.red : colorScheme.onSurfaceVariant,
+                onTap: () {
+                  if (userId == null) return;
+                  if (isLiked) {
+                    repo.unlikePost(post.id, userId);
+                  } else {
+                    repo.likePost(post.id, userId);
+                  }
+                },
+              ),
+              const SizedBox(width: 16),
+              _EngagementButton(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: '${post.commentCount}',
+                color: colorScheme.onSurfaceVariant,
+                onTap: () {
+                  // Scroll to comment section or focus?
+                },
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.share_outlined, size: 20),
+                onPressed: () {
+                  Share.share(
+                    'Check out this ${post.type.name} from ${post.vendorName} on RightLogistics!\n\n${post.description}',
+                  );
+                  repo.sharePost(post.id);
+                },
+              ),
+              IconButton(
+                icon: Icon(
+                  post.bookmarkIds.contains(userId)
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  size: 20,
+                  color: post.bookmarkIds.contains(userId)
+                      ? Colors.amber[700]
+                      : null,
+                ),
+                onPressed: () {
+                  if (userId == null) return;
+                  if (post.bookmarkIds.contains(userId)) {
+                    repo.unbookmarkPost(post.id, userId);
+                  } else {
+                    repo.bookmarkPost(post.id, userId);
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildDataGrid(ColorScheme colorScheme) {
+  Widget _buildDataGrid(ColorScheme colorScheme, VendorPost post) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: [
-        if (widget.post.price > 0)
-          _DataTile(
-            label: 'PRICE',
-            value:
-                '${widget.post.currency} ${widget.post.price.toStringAsFixed(2)}',
-            icon: Icons.payments,
-            color: colorScheme.primary,
-          ),
-        if (widget.post.deliveryTime != null)
+        if (post.deliveryTime != null)
           _DataTile(
             label: 'DELIVERY',
-            value: widget.post.deliveryTime!,
-            icon: Icons.timer,
+            value: post.deliveryTime!,
+            icon: Icons.timer_outlined,
             color: Colors.orange,
           ),
-        if (widget.post.deliveryMode != null)
+        if (post.deliveryMode != null)
           _DataTile(
             label: 'MODE',
-            value: widget.post.deliveryMode!,
+            value: post.deliveryMode!,
             icon: Icons.airplanemode_active,
             color: Colors.blue,
           ),
-        if (widget.post.metadata['location'] != null)
+        if (post.metadata['location'] != null)
           _DataTile(
             label: 'LOCATION',
-            value: widget.post.metadata['location'],
-            icon: Icons.location_on,
+            value: post.metadata['location'],
+            icon: Icons.location_on_outlined,
             color: Colors.green,
+          ),
+        if (post.promoCode != null)
+          _DataTile(
+            label: 'PROMO CODE',
+            value: post.promoCode!,
+            icon: Icons.qr_code_rounded,
+            color: Colors.amber,
+          ),
+        if (post.discountPercentage != null)
+          _DataTile(
+            label: 'DISCOUNT',
+            value: '${post.discountPercentage!.toStringAsFixed(0)}%',
+            icon: Icons.trending_down_rounded,
+            color: Colors.redAccent,
+          ),
+        if (post.discountAmount != null)
+          _DataTile(
+            label: 'DISCOUNT',
+            value:
+                '${post.currency} ${post.discountAmount!.toStringAsFixed(2)}',
+            icon: Icons.money_off_rounded,
+            color: Colors.redAccent,
+          ),
+        if (post.promoExpiry != null)
+          _DataTile(
+            label: 'EXPIRES',
+            value:
+                '${post.promoExpiry!.day}/${post.promoExpiry!.month}/${post.promoExpiry!.year}',
+            icon: Icons.event_available_rounded,
+            color: Colors.deepOrange,
+          ),
+        if (post.minPurchaseAmount != null && post.minPurchaseAmount! > 0)
+          _DataTile(
+            label: 'MIN PURCHASE',
+            value:
+                '${post.currency} ${post.minPurchaseAmount!.toStringAsFixed(2)}',
+            icon: Icons.shopping_bag_outlined,
+            color: Colors.purple,
           ),
       ],
     );
@@ -494,15 +842,25 @@ class _EngagementButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-        child: Column(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color),
-            const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 12, color: color)),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: color ?? colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),
@@ -579,12 +937,29 @@ class _NestedCommentThread extends StatefulWidget {
 class _NestedCommentThreadState extends State<_NestedCommentThread> {
   int _visibleCount = 5;
 
+  List<PostComment> _getAllReplies(String parentId) {
+    final List<PostComment> results = [];
+    final directReplies = widget.allReplies[parentId] ?? [];
+
+    // Sort direct replies by creation date
+    directReplies.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    for (var reply in directReplies) {
+      results.add(reply);
+      // Recursively add replies to this reply
+      results.addAll(_getAllReplies(reply.id));
+    }
+    return results;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Collect all replies recursively or just flat under parent as TikTok does?
-    // TikTok usually groups all replies under the thread root.
-    // Real nesting:
-    final replies = widget.allReplies[widget.parent.id] ?? [];
+    // Collect ALL replies in the tree under this parent
+    final allNestedReplies = _getAllReplies(widget.parent.id);
+
+    // Note: Since we want a flat-ish display like TikTok/Instagram under the parent,
+    // we take the first few.
+    final visibleReplies = allNestedReplies.take(_visibleCount).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,12 +970,13 @@ class _NestedCommentThreadState extends State<_NestedCommentThread> {
           onReply: () =>
               widget.onReply(widget.parent.id, widget.parent.userName),
         ),
-        if (replies.isNotEmpty) ...[
+        if (allNestedReplies.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(left: 48.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ...replies.take(_visibleCount).map((reply) {
+                ...visibleReplies.map((reply) {
                   // Find attribution if immediate parent is not the thread root
                   String? replyingTo;
                   if (reply.parentId != widget.parent.id) {
@@ -615,11 +991,11 @@ class _NestedCommentThreadState extends State<_NestedCommentThread> {
                     onReply: () => widget.onReply(reply.id, reply.userName),
                   );
                 }),
-                if (replies.length > _visibleCount)
+                if (allNestedReplies.length > _visibleCount)
                   TextButton(
                     onPressed: () => setState(() => _visibleCount += 10),
                     child: Text(
-                      'View ${replies.length - _visibleCount} more replies',
+                      'View ${allNestedReplies.length - _visibleCount} more replies',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -693,40 +1069,13 @@ class _CommentTile extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        comment.userName,
+                        '${comment.userName}${replyingToName != null ? ' > @$replyingToName' : ''}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      if (replyingToName != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4.0),
-                          child: RichText(
-                            text: TextSpan(
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontSize: 13,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'replied to ',
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: '@$replyingToName',
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       Text(
                         comment.content,
                         style: const TextStyle(fontSize: 14),

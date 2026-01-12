@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,9 @@ import 'package:rightlogistics/src/features/social/domain/status_model.dart';
 import 'package:rightlogistics/src/features/social/presentation/providers/social_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rightlogistics/src/features/notifications/data/notifications_repository.dart';
+import 'package:rightlogistics/src/features/onboarding/presentation/widgets/dynamic_input_list.dart';
+import 'package:rightlogistics/src/features/common/presentation/widgets/country_selector_dialog.dart';
+import 'package:rightlogistics/src/features/authentication/domain/user_model.dart';
 
 class SocialPostCreator extends ConsumerStatefulWidget {
   const SocialPostCreator({super.key});
@@ -31,19 +35,78 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
   final _locationController = TextEditingController();
   final _supplierTypeController = TextEditingController();
   final _capacityController = TextEditingController();
-  final _countryController = TextEditingController();
-  final _stateController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _streetController = TextEditingController();
-  final _zipController = TextEditingController();
-  final _warehouseNameController = TextEditingController();
+  final _promoCodeController = TextEditingController();
+  final _discountPercentageController = TextEditingController();
+  final _discountAmountController = TextEditingController();
+  final _termsController = TextEditingController();
+  final _minPurchaseController = TextEditingController();
+  final _usageLimitController = TextEditingController();
+
+  List<Map<String, dynamic>> _warehouseLocations = [];
 
   final List<File> _imageFiles = [];
   PostType _selectedType = PostType.update;
   bool _isLoading = false;
   bool _isPurchasable = false;
   DateTime? _eta; // New
+  DateTime? _promoExpiry;
   PostVisibility _selectedVisibility = PostVisibility.public;
+
+  @override
+  void initState() {
+    super.initState();
+    _discountPercentageController.addListener(_onDiscountChanged);
+    _discountAmountController.addListener(_onDiscountChanged);
+  }
+
+  @override
+  void dispose() {
+    _discountPercentageController.removeListener(_onDiscountChanged);
+    _discountAmountController.removeListener(_onDiscountChanged);
+    _descriptionController.dispose();
+    _detailsController.dispose();
+    _priceController.dispose();
+    _minOrderController.dispose();
+    _maxOrderController.dispose();
+    _titleController.dispose();
+    _deliveryTimeController.dispose();
+    _deliveryModeController.dispose();
+    _minQuantityController.dispose();
+    _locationController.dispose();
+    _supplierTypeController.dispose();
+    _capacityController.dispose();
+    _promoCodeController.dispose();
+    _discountPercentageController.dispose();
+    _discountAmountController.dispose();
+    _termsController.dispose();
+    _minPurchaseController.dispose();
+    _usageLimitController.dispose();
+    super.dispose();
+  }
+
+  void _onDiscountChanged() {
+    if (_promoCodeController.text.isEmpty) {
+      final value =
+          _discountPercentageController.text + _discountAmountController.text;
+      if (value.isNotEmpty) {
+        _generateCouponCode();
+      }
+    }
+  }
+
+  void _generateCouponCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = math.Random();
+    final code = String.fromCharCodes(
+      Iterable.generate(
+        10,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+    setState(() {
+      _promoCodeController.text = code;
+    });
+  }
 
   Future<void> _pickImages() async {
     final storage = ref.read(storageRepositoryProvider);
@@ -67,6 +130,19 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
     );
     if (picked != null) {
       setState(() => _eta = picked);
+    }
+  }
+
+  Future<void> _pickPromoExpiry() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 30)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() => _promoExpiry = picked);
     }
   }
 
@@ -140,6 +216,19 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
               ? _deliveryModeController.text.trim()
               : null,
           eta: _eta,
+          promoCode: _promoCodeController.text.trim().isNotEmpty
+              ? _promoCodeController.text.trim()
+              : null,
+          discountPercentage: double.tryParse(
+            _discountPercentageController.text,
+          ),
+          discountAmount: double.tryParse(_discountAmountController.text),
+          promoExpiry: _promoExpiry,
+          termsAndConditions: _termsController.text.trim().isNotEmpty
+              ? _termsController.text.trim()
+              : null,
+          minPurchaseAmount: double.tryParse(_minPurchaseController.text),
+          usageLimit: int.tryParse(_usageLimitController.text),
           type: _selectedType,
           visibility: _selectedVisibility,
           createdAt: DateTime.now(),
@@ -153,17 +242,47 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
               'supplierType': _supplierTypeController.text.trim(),
             if (_capacityController.text.isNotEmpty)
               'capacity': _capacityController.text.trim(),
-            'country': _countryController.text.trim(),
-            'state': _stateController.text.trim(),
-            'city': _cityController.text.trim(),
-            'street': _streetController.text.trim(),
-            'zip': _zipController.text.trim(),
-            'warehouseName': _warehouseNameController.text.trim(),
+            'locations': _warehouseLocations,
           },
         );
 
         // 3. Save to Firestore
         await ref.read(socialRepositoryProvider).createPost(post);
+
+        // 4. Update Vendor addresses in KYC if applicable
+        if (user.role == UserRole.vendor && _warehouseLocations.isNotEmpty) {
+          final currentAddresses = user.vendorKyc?.vendorAddresses ?? [];
+          final List<Map<String, dynamic>> updatedAddresses = List.from(
+            currentAddresses,
+          );
+
+          bool modified = false;
+          for (final loc in _warehouseLocations) {
+            // Check if location is non-empty enough to be worth adding
+            if ((loc['label']?.toString().isNotEmpty ?? false) ||
+                (loc['street']?.toString().isNotEmpty ?? false)) {
+              // Check for potential duplicate by label and street
+              bool isDuplicate = currentAddresses.any(
+                (addr) =>
+                    addr['label'] == loc['label'] &&
+                    addr['street'] == loc['street'],
+              );
+
+              if (!isDuplicate) {
+                updatedAddresses.add(Map<String, dynamic>.from(loc));
+                modified = true;
+              }
+            }
+          }
+
+          if (modified) {
+            final updatedKyc = (user.vendorKyc ?? const VendorKyc()).copyWith(
+              vendorAddresses: updatedAddresses,
+            );
+            final updatedUser = user.copyWith(vendorKyc: updatedKyc);
+            await ref.read(authRepositoryProvider).updateUser(updatedUser);
+          }
+        }
       }
 
       // 4. Send Broadcast Notification
@@ -229,13 +348,16 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
                     if (_selectedType == PostType.warehouse ||
                         _selectedType == PostType.warehouse_Supplier)
                       _buildWarehouseFields(colorScheme),
-                    const SizedBox(height: 120), // Bottom padding for button
+                    if (_selectedType == PostType.promotion)
+                      _buildPromotionFields(colorScheme),
+                    const SizedBox(height: 48),
+                    _buildPostButton(context),
+                    const SizedBox(height: 80), // Final bottom space
                   ]),
                 ),
               ),
             ],
           ),
-          _buildPostButton(context),
         ],
       ),
     );
@@ -385,8 +507,8 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
         ),
         const SizedBox(height: 16),
         Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: 4,
+          //runSpacing: 4,
           children: PostType.values.map((type) {
             final isSelected = _selectedType == type;
             return FilterChip(
@@ -667,7 +789,7 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
       children: [
         const SizedBox(height: 24),
         Text(
-          'WAREHOUSE DETAILS',
+          'WAREHOUSE & SUPPLIER DETAILS',
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.w900,
             fontSize: 12,
@@ -676,75 +798,236 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildInputField(
-          label: 'WAREHOUSE NAME',
-          controller: _warehouseNameController,
-          hint: 'e.g., East Coast Hub',
-          colorScheme: colorScheme,
-        ),
-        const SizedBox(height: 20),
-        _buildInputField(
-          label: 'STREET ADDRESS',
-          controller: _streetController,
-          hint: '123 Business Rd',
-          prefixIcon: Icons.location_on_rounded,
-          colorScheme: colorScheme,
-        ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: _buildInputField(
-                label: 'CITY',
-                controller: _cityController,
-                hint: 'Accra',
-                colorScheme: colorScheme,
+        DynamicInputList<Map<String, dynamic>>(
+          title: 'Offices & Warehouses',
+          addLabel: 'Add Location',
+          items: _warehouseLocations,
+          onAdd: () => setState(
+            () => _warehouseLocations.add({
+              'label': '',
+              'country': '',
+              'street': '',
+              'city': '',
+              'state': '',
+              'zip': '',
+              'phones': <String>[],
+            }),
+          ),
+          onRemove: (index) =>
+              setState(() => _warehouseLocations.removeAt(index)),
+          itemBuilder: (index, item) {
+            final phones = (item['phones'] as List? ?? []).cast<String>();
+            return Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                borderRadius: BorderRadius.circular(16.w),
+                color: colorScheme.surfaceContainerHighest.withOpacity(0.1),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildInputField(
-                label: 'STATE / REGION',
-                controller: _stateController,
-                hint: 'Greater Accra',
-                colorScheme: colorScheme,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LabeledTextInput(
+                    label: 'LOCATION NAME',
+                    hint: 'e.g. Accra Network Hub',
+                    initialValue: item['label'] ?? '',
+                    onChanged: (val) => item['label'] = val,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'COUNTRY',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                      letterSpacing: 1,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => CountrySelectorDialog(
+                          onSelect: (country) {
+                            setState(() {
+                              item['country'] = country.name;
+                            });
+                            Navigator.pop(context);
+                          },
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(18.w),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withOpacity(
+                          0.2,
+                        ),
+                        borderRadius: BorderRadius.circular(16.w),
+                        border: Border.all(
+                          color: colorScheme.outline.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.public_rounded,
+                            color: colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              item['country']?.isNotEmpty == true
+                                  ? item['country']!
+                                  : 'Select Country',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: item['country']?.isNotEmpty == true
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurfaceVariant.withOpacity(
+                                        0.4,
+                                      ),
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: colorScheme.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  LabeledTextInput(
+                    label: 'STREET ADDRESS',
+                    hint: 'Street Name & Number',
+                    initialValue: item['street'] ?? '',
+                    onChanged: (val) => item['street'] = val,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LabeledTextInput(
+                          label: 'CITY',
+                          hint: 'City',
+                          initialValue: item['city'] ?? '',
+                          onChanged: (val) => item['city'] = val,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: LabeledTextInput(
+                          label: 'STATE / REGION',
+                          hint: 'Region',
+                          initialValue: item['state'] ?? '',
+                          onChanged: (val) => item['state'] = val,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  LabeledTextInput(
+                    label: 'ZIP / POSTAL CODE',
+                    hint: 'Zip Code',
+                    initialValue: item['zip'] ?? '',
+                    onChanged: (val) => item['zip'] = val,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'CONTACT NUMBERS',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          letterSpacing: 1,
+                          color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            if (item['phones'] == null) {
+                              item['phones'] = <String>[];
+                            }
+                            (item['phones'] as List).add('');
+                          });
+                        },
+                        icon: const Icon(Icons.add, size: 14),
+                        label: const Text(
+                          'ADD PHONE',
+                          style: TextStyle(fontSize: 10),
+                        ),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (phones.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'No phone numbers added.',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                          fontStyle: FontStyle.italic,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ...phones.asMap().entries.map((entry) {
+                    final pIndex = entry.key;
+                    final pVal = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          LabeledTextInput(
+                            hint: 'Phone Number (e.g. +123...)',
+                            initialValue: pVal,
+                            keyboardType: TextInputType.phone,
+                            onChanged: (val) {
+                              phones[pIndex] = val;
+                              item['phones'] = phones;
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              color: Colors.redAccent,
+                              size: 18,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                (item['phones'] as List).removeAt(pIndex);
+                              });
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
               ),
-            ),
-          ],
+            );
+          },
         ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: _buildInputField(
-                label: 'COUNTRY',
-                controller: _countryController,
-                hint: 'Ghana',
-                colorScheme: colorScheme,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildInputField(
-                label: 'ZIP / POSTAL CODE',
-                controller: _zipController,
-                hint: '00233',
-                colorScheme: colorScheme,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _buildInputField(
-          label: 'OVERALL LOCATION (LAT/LNG OR SEARCH)',
-          controller: _locationController,
-          hint: 'Enter full facility address/coordinates...',
-          prefixIcon: Icons.map_rounded,
-          colorScheme: colorScheme,
-        ),
+        const SizedBox(height: 24),
         if (_selectedType == PostType.warehouse ||
             _selectedType == PostType.warehouse_Supplier) ...[
-          const SizedBox(height: 20),
           _buildInputField(
             label: 'SUPPLIER / WAREHOUSE TYPE',
             controller: _supplierTypeController,
@@ -763,6 +1046,107 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
     );
   }
 
+  Widget _buildPromotionFields(ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Text(
+          'PROMOTION DETAILS',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+            letterSpacing: 1.5,
+            color: colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildInputField(
+          label: 'COUPON CODE',
+          controller: _promoCodeController,
+          hint: 'e.g., WINTER25',
+          prefixIcon: Icons.qr_code_rounded,
+          suffixIcon: Icons.refresh_rounded,
+          onSuffixTap: _generateCouponCode,
+          colorScheme: colorScheme,
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: _buildInputField(
+                label: 'DISCOUNT %',
+                controller: _discountPercentageController,
+                hint: '0',
+                keyboardType: TextInputType.number,
+                colorScheme: colorScheme,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildInputField(
+                label: 'DISCOUNT AMT (GHS)',
+                controller: _discountAmountController,
+                hint: '0.00',
+                keyboardType: TextInputType.number,
+                colorScheme: colorScheme,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: _buildInputField(
+                label: 'MIN PURCHASE (GHS)',
+                controller: _minPurchaseController,
+                hint: '0.00',
+                keyboardType: TextInputType.number,
+                colorScheme: colorScheme,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildInputField(
+                label: 'USAGE LIMIT',
+                controller: _usageLimitController,
+                hint: 'e.g., 100',
+                keyboardType: TextInputType.number,
+                colorScheme: colorScheme,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        GestureDetector(
+          onTap: _pickPromoExpiry,
+          child: AbsorbPointer(
+            child: _buildInputField(
+              label: 'EXPIRY DATE',
+              controller: TextEditingController(
+                text: _promoExpiry != null
+                    ? '${_promoExpiry!.day}/${_promoExpiry!.month}/${_promoExpiry!.year}'
+                    : '',
+              ),
+              hint: 'Select Expiry Date',
+              prefixIcon: Icons.event_available_rounded,
+              colorScheme: colorScheme,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildInputField(
+          label: 'TERMS & CONDITIONS',
+          controller: _termsController,
+          hint: 'e.g., Only valid for first-time orders...',
+          maxLines: 3,
+          colorScheme: colorScheme,
+        ),
+      ],
+    );
+  }
+
   Widget _buildInputField({
     required String label,
     required TextEditingController controller,
@@ -770,25 +1154,31 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     IconData? prefixIcon,
+    IconData? suffixIcon,
+    VoidCallback? onSuffixTap,
+    void Function(String)? onChanged,
     required ColorScheme colorScheme,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.w900,
-            fontSize: 10,
-            letterSpacing: 1,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+        if (label.isNotEmpty) ...[
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.w900,
+              fontSize: 10,
+              letterSpacing: 1,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
+          const SizedBox(height: 10),
+        ],
         TextField(
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
+          onChanged: onChanged,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
@@ -798,6 +1188,16 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
             ),
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: colorScheme.primary, size: 20)
+                : null,
+            suffixIcon: suffixIcon != null
+                ? IconButton(
+                    icon: Icon(
+                      suffixIcon,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    onPressed: onSuffixTap,
+                  )
                 : null,
             filled: true,
             fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.2),
@@ -826,54 +1226,33 @@ class _SocialPostCreatorState extends ConsumerState<SocialPostCreator> {
 
   Widget _buildPostButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Positioned(
-      bottom: 50.h,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).scaffoldBackgroundColor.withOpacity(0),
-              Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
-              Theme.of(context).scaffoldBackgroundColor,
-            ],
-          ),
-        ),
-        child: ElevatedButton(
-          onPressed: _isLoading ? null : _handleCreatePost,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            minimumSize: const Size(double.infinity, 60),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            elevation: 8,
-            shadowColor: colorScheme.primary.withOpacity(0.4),
-          ),
-          child: _isLoading
-              ? SizedBox(
-                  width: 24.w,
-                  height: 24.h,
-                  child: const CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 3,
-                  ),
-                )
-              : Text(
-                  'PUBLISH UPDATE',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16.sp,
-                    letterSpacing: 1,
-                  ),
-                ),
-        ),
+    return ElevatedButton(
+      onPressed: _isLoading ? null : _handleCreatePost,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        minimumSize: const Size(double.infinity, 64),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 8,
+        shadowColor: colorScheme.primary.withOpacity(0.4),
       ),
+      child: _isLoading
+          ? SizedBox(
+              width: 24.w,
+              height: 24.h,
+              child: const CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
+            )
+          : Text(
+              'PUBLISH UPDATE',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w900,
+                fontSize: 16.sp,
+                letterSpacing: 2,
+              ),
+            ),
     );
   }
 }

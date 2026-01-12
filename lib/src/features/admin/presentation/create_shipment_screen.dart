@@ -1071,6 +1071,7 @@ class _CostReviewStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme customColor = Theme.of(context).colorScheme;
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -1090,7 +1091,7 @@ class _CostReviewStep extends StatelessWidget {
           'Based on declared value: \$${state.totalDeclaredValue.toStringAsFixed(2)}',
           style: TextStyle(
             fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            color: customColor.onSurface.withOpacity(0.6),
           ),
         ),
         const SizedBox(height: 24),
@@ -1102,10 +1103,10 @@ class _CostReviewStep extends StatelessWidget {
               subtitle: Text('${q['days']} days • ${q['rating']} stars'),
               trailing: Text(
                 '\$${q['price'].toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryBlue,
+                  color: customColor.onSurface.withOpacity(0.6),
                 ),
               ),
             ),

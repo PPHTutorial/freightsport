@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:rightlogistics/src/core/presentation/providers/nav_providers.dart';
 import 'package:rightlogistics/src/core/theme/app_theme.dart';
 
 import 'package:rightlogistics/src/features/authentication/data/auth_repository.dart';
@@ -17,42 +19,34 @@ class AdminFleetScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final fleetAsync = ref.watch(fleetProvider);
 
-    return Scaffold(
-      /* appBar: AppBar(
-        title: const Text('Fleet Management'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ), */
-      body: fleetAsync.when(
-        data: (couriers) {
-          if (couriers.isEmpty) {
-            return const Center(child: Text('No couriers in the fleet yet.'));
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: couriers.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final courier = couriers[index];
-              return _CourierCard(courier: courier);
-            },
+    // Update AppBar Config
+    Future.microtask(() {
+      if (!context.mounted) return;
+      final location = GoRouterState.of(context).uri.path;
+      ref
+          .read(appBarConfigProvider(location).notifier)
+          .setConfig(
+            const AppBarConfig(title: 'Fleet Management', centerTitle: false),
           );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Logic to invite/add courier
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Courier invitation flow...')),
-          );
-        },
-        label: const Text('Add Courier'),
-        icon: const Icon(Icons.person_add),
-        backgroundColor: AppTheme.primaryBlue,
-      ),
+    });
+
+    return fleetAsync.when(
+      data: (couriers) {
+        if (couriers.isEmpty) {
+          return const Center(child: Text('No couriers in the fleet yet.'));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: couriers.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final courier = couriers[index];
+            return _CourierCard(courier: courier);
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
 }
@@ -66,11 +60,13 @@ class _CourierCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).brightness == Brightness.light
+                ? Colors.black.withOpacity(0.05)
+                : Colors.black.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -104,8 +100,8 @@ class _CourierCard extends StatelessWidget {
                 ),
                 Text(
                   courier.phoneNumber ?? 'No Phone',
-                  style: const TextStyle(
-                    color: AppTheme.textGrey,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 13,
                   ),
                 ),

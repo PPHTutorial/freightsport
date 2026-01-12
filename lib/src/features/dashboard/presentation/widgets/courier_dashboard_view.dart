@@ -13,6 +13,7 @@ import 'package:rightlogistics/src/features/dashboard/presentation/providers/das
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:rightlogistics/src/features/dashboard/presentation/widgets/dashboard_analytics_section.dart';
+import 'package:rightlogistics/src/core/presentation/providers/nav_providers.dart';
 
 final courierShipmentsProvider = StreamProvider.autoDispose<List<Shipment>>((
   ref,
@@ -49,26 +50,122 @@ class CourierDashboardView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCourierHeader(context, ref),
+    // Update AppBar Config
+    Future.microtask(() {
+      if (!context.mounted) return;
+      final location = GoRouterState.of(context).uri.path;
+      ref
+          .read(appBarConfigProvider(location).notifier)
+          .setConfig(
+            AppBarConfig(
+              title: 'Courier Console',
+              centerTitle: false,
+              actions: [
+                AppBarAction(
+                  icon: FontAwesomeIcons.gear,
+                  label: 'Settings',
+                  onPressed: () {
+                    if (context.mounted) context.push('/settings');
+                  },
+                ),
+                AppBarAction(
+                  icon: FontAwesomeIcons.bell,
+                  label: 'Notifications',
+                  onPressed: () {
+                    if (context.mounted) context.push('/notifications');
+                  },
+                ),
+              ],
+            ),
+          );
+    });
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCourierHeader(context, ref),
+          SizedBox(height: 32.h),
+          if (ref.watch(currentUserProvider)?.payoutDetails == null) ...[
+            _buildPayoutWarning(context),
             SizedBox(height: 32.h),
-            _buildMapPreview(context),
-            SizedBox(height: 32.h),
-            _buildEarningsSection(context, ref),
-            SizedBox(height: 32.h),
-            _buildQuickPerformance(context, ref),
-            SizedBox(height: 32.h),
-            _buildAnalyticsSection(context, ref),
-            SizedBox(height: 40.h),
-            _buildRunList(context, ref),
           ],
+          _buildMapPreview(context),
+          SizedBox(height: 32.h),
+          _buildEarningsSection(context, ref),
+          SizedBox(height: 32.h),
+          _buildQuickPerformance(context, ref),
+          SizedBox(height: 32.h),
+          _buildAnalyticsSection(context, ref),
+          SizedBox(height: 40.h),
+          _buildRunList(context, ref),
+          SizedBox(height: 32.h),
+          _buildSettingsAccess(context),
+          SizedBox(height: 40.h),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsAccess(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(24.w),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
         ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: FaIcon(
+              FontAwesomeIcons.gear,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20.w,
+            ),
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Account Settings',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.sp,
+                  ),
+                ),
+                Text(
+                  'Preferences, Currency & Security',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => context.push('/settings'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.w),
+              ),
+            ),
+            child: const Text('OPEN'),
+          ),
+        ],
       ),
     );
   }
@@ -430,6 +527,67 @@ class CourierDashboardView extends ConsumerWidget {
               const Center(child: Text('Error loading assignments')),
         ),
       ],
+    );
+  }
+
+  Widget _buildPayoutWarning(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(16.w),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            FontAwesomeIcons.triangleExclamation,
+            color: Theme.of(context).colorScheme.onErrorContainer,
+            size: 24.w,
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Payout Method Missing',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.sp,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'You won\'t be able to receive earnings.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                    fontSize: 12.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              context.push('/onboarding/setup?step=2');
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.onErrorContainer.withOpacity(0.1),
+            ),
+            child: Text(
+              'Setup Now',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

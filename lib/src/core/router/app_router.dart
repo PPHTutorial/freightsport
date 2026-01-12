@@ -210,7 +210,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 path: 'update/:id',
                 builder: (context, state) {
                   final trackingNumber = state.pathParameters['id']!;
-                  final shipment = state.extra as Shipment?;
+                  final extra = state.extra;
+                  final shipment = extra is Shipment
+                      ? extra
+                      : (extra is Map<String, dynamic>
+                            ? Shipment.fromJson(extra)
+                            : null);
                   return UpdateStatusScreen(
                     trackingNumber: trackingNumber,
                     shipment: shipment,
@@ -234,7 +239,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'details',
                 builder: (context, state) {
-                  final notification = state.extra as NotificationModel;
+                  final extra = state.extra;
+                  final NotificationModel notification;
+                  if (extra is NotificationModel) {
+                    notification = extra;
+                  } else if (extra is Map<String, dynamic>) {
+                    notification = NotificationModel.fromJson(extra);
+                  } else {
+                    return const Scaffold(
+                      body: Center(child: Text('Invalid notification data')),
+                    );
+                  }
                   return NotificationDetailsScreen(notification: notification);
                 },
               ),
@@ -303,7 +318,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/user-profile',
             builder: (context, state) {
-              final user = state.extra as UserModel;
+              final extra = state.extra;
+              final UserModel user;
+              if (extra is UserModel) {
+                user = extra;
+              } else if (extra is Map<String, dynamic>) {
+                user = UserModel.fromJson(extra);
+              } else {
+                return const Scaffold(
+                  body: Center(child: Text('Invalid user data')),
+                );
+              }
+
               if (user.role == UserRole.vendor) {
                 return VendorStoreScreen(vendor: user);
               }
@@ -323,7 +349,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/social/status',
         builder: (context, state) {
-          final statuses = state.extra as List<StatusModel>;
+          final extra = state.extra;
+          final List<StatusModel> statuses;
+          if (extra is List<StatusModel>) {
+            statuses = extra;
+          } else if (extra is List) {
+            statuses = extra
+                .map(
+                  (e) => e is StatusModel
+                      ? e
+                      : StatusModel.fromJson(e as Map<String, dynamic>),
+                )
+                .toList();
+          } else {
+            return const Scaffold(
+              body: Center(child: Text('Invalid status data')),
+            );
+          }
           return StatusViewerScreen(statuses: statuses);
         },
       ),

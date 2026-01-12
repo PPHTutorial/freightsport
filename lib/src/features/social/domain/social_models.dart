@@ -55,9 +55,18 @@ class VendorPost with _$VendorPost {
     int? minOrder, // Target amount
     int? maxOrder,
     @Default(0) int currentOrderCount, // Progress
-    @TimestampNullableConverter() DateTime? eta,
-    String? deliveryTime, // e.g., "3-5 days"
     String? deliveryMode, // e.g., "Air Freight"
+    String? deliveryTime, // e.g., "3-5 days"
+    @TimestampNullableConverter() DateTime? eta,
+
+    // Promotion Specifics
+    String? promoCode,
+    double? discountPercentage,
+    double? discountAmount,
+    @TimestampNullableConverter() DateTime? promoExpiry,
+    String? termsAndConditions,
+    double? minPurchaseAmount,
+    int? usageLimit,
 
     @Default(PostType.update) PostType type,
     @Default(PostVisibility.public) PostVisibility visibility,

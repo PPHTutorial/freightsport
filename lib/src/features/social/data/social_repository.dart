@@ -160,6 +160,34 @@ class SocialRepository {
     });
   }
 
+  Future<void> sharePost(String postId) async {
+    if (postId.startsWith('mock_')) return;
+    await _firestore.collection('posts').doc(postId).update({
+      'shareCount': FieldValue.increment(1),
+    });
+  }
+
+  Future<void> bookmarkPost(String postId, String userId) async {
+    if (postId.startsWith('mock_')) return;
+    await _firestore.collection('posts').doc(postId).update({
+      'bookmarkIds': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  Future<void> unbookmarkPost(String postId, String userId) async {
+    if (postId.startsWith('mock_')) return;
+    await _firestore.collection('posts').doc(postId).update({
+      'bookmarkIds': FieldValue.arrayRemove([userId]),
+    });
+  }
+
+  Stream<VendorPost?> watchPost(String postId) {
+    return _firestore.collection('posts').doc(postId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return VendorPost.fromJson({...doc.data()!, 'id': doc.id});
+    });
+  }
+
   // --- Comments ---
   Future<void> addComment(PostComment comment) async {
     if (comment.postId.startsWith('mock_')) return; // Ignore mock posts
@@ -240,23 +268,48 @@ class SocialRepository {
 
   // --- Following ---
   Future<void> followUser(String currentUserId, String targetUserId) async {
-    await _firestore.collection('follows').doc(currentUserId).set({
+    final batch = _firestore.batch();
+
+    batch.update(_firestore.collection('users').doc(currentUserId), {
+      'followingIds': FieldValue.arrayUnion([targetUserId]),
+    });
+
+    batch.update(_firestore.collection('users').doc(targetUserId), {
+      'followerIds': FieldValue.arrayUnion([currentUserId]),
+    });
+
+    // Keep the follows collection for backward compatibility or complex queries
+    batch.set(_firestore.collection('follows').doc(currentUserId), {
       'following': FieldValue.arrayUnion([targetUserId]),
     }, SetOptions(merge: true));
 
-    await _firestore.collection('follows').doc(targetUserId).set({
+    batch.set(_firestore.collection('follows').doc(targetUserId), {
       'followers': FieldValue.arrayUnion([currentUserId]),
     }, SetOptions(merge: true));
+
+    await batch.commit();
   }
 
   Future<void> unfollowUser(String currentUserId, String targetUserId) async {
-    await _firestore.collection('follows').doc(currentUserId).update({
+    final batch = _firestore.batch();
+
+    batch.update(_firestore.collection('users').doc(currentUserId), {
+      'followingIds': FieldValue.arrayRemove([targetUserId]),
+    });
+
+    batch.update(_firestore.collection('users').doc(targetUserId), {
+      'followerIds': FieldValue.arrayRemove([currentUserId]),
+    });
+
+    batch.update(_firestore.collection('follows').doc(currentUserId), {
       'following': FieldValue.arrayRemove([targetUserId]),
     });
 
-    await _firestore.collection('follows').doc(targetUserId).update({
+    batch.update(_firestore.collection('follows').doc(targetUserId), {
       'followers': FieldValue.arrayRemove([currentUserId]),
     });
+
+    await batch.commit();
   }
 
   Stream<List<String>> watchFollowingIds(String userId) {

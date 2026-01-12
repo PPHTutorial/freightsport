@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rightlogistics/src/core/theme/app_theme.dart';
 import 'package:rightlogistics/src/core/utils/date_utils.dart';
 import 'package:rightlogistics/src/features/social/domain/social_models.dart';
@@ -16,8 +17,11 @@ import 'package:rightlogistics/src/core/utils/luminance_utils.dart';
 import 'package:rightlogistics/src/features/social/presentation/providers/luminance_provider.dart';
 import 'package:rightlogistics/src/features/authentication/domain/user_model.dart';
 import 'package:rightlogistics/src/core/utils/auth_action_guard.dart';
+import 'package:rightlogistics/src/features/common/presentation/widgets/currency_display.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:rightlogistics/src/features/profile/presentation/public_profile_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:rightlogistics/src/features/payments/presentation/payment_screen.dart';
 
 class SocialPostCard extends StatelessWidget {
   final VendorPost post;
@@ -334,9 +338,48 @@ class PromotionPostCard extends ConsumerWidget {
                     ),
                   ),
                 ),
+                Positioned(
+                  top: 12.h,
+                  right: 12.w,
+                  child:
+                      post.discountPercentage != null ||
+                          post.discountAmount != null
+                      ? Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 6.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            borderRadius: BorderRadius.circular(12.w),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent.withOpacity(0.3),
+                                blurRadius: 8.w,
+                                offset: Offset(0, 4.h),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            post.discountPercentage != null
+                                ? '-${post.discountPercentage!.toStringAsFixed(0)}%'
+                                : '-${post.currency}${post.discountAmount!.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ],
             ),
-            _PostHeader(post: post, isOverImage: true),
+            _PostHeader(
+              post: post,
+              isOverImage: true,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
             Padding(
               padding: EdgeInsets.all(20.w),
               child: Column(
@@ -353,23 +396,77 @@ class PromotionPostCard extends ConsumerWidget {
                   SizedBox(height: 20.h),
                   Row(
                     children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.w),
+                      if (post.promoCode != null)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Clipboard.setData(
+                                ClipboardData(text: post.promoCode!),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Promo code copied!'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.all(12.w),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12.w),
+                                border: Border.all(
+                                  color: Colors.amber,
+                                  style: BorderStyle.solid,
+                                  width: 1.w,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.content_copy_rounded,
+                                    size: 16.w,
+                                    color: Colors.amber[800],
+                                  ),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    post.promoCode!,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.5,
+                                      fontSize: 14.sp,
+                                      color: Colors.amber[900],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          child: Text(
-                            'CLAIM OFFER',
-                            style: TextStyle(fontSize: 14.sp),
+                        )
+                      else
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => _PromoDialog(post: post),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 12.h),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.w),
+                              ),
+                            ),
+                            child: Text(
+                              'CLAIM OFFER',
+                              style: TextStyle(fontSize: 14.sp),
+                            ),
                           ),
                         ),
-                      ),
                       SizedBox(width: 12.w),
                     ],
                   ),
@@ -389,48 +486,173 @@ class PromotionPostCard extends ConsumerWidget {
   }
 }
 
-class AppreciationPostCard extends StatelessWidget {
+class AppreciationPostCard extends ConsumerWidget {
   final VendorPost post;
   const AppreciationPostCard({super.key, required this.post});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    final isFollowing = user?.followingIds.contains(post.vendorId) ?? false;
+
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => SocialPostDetailScreen(post: post)),
       ),
       child: Container(
         margin: EdgeInsets.only(bottom: 24.h),
-        padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 24.w),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppTheme.accentOrange.withOpacity(0.8),
+              AppTheme.accentOrange.withOpacity(0.9),
               const Color(0xFFFF8C00),
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(24.w),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withOpacity(0.3),
+              blurRadius: 20.w,
+              offset: Offset(0, 10.h),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            _PostHeader(post: post),
-            const SizedBox(height: 20),
-            Icon(FontAwesomeIcons.heart, color: Colors.white, size: 40.w),
-            SizedBox(height: 20.h),
-            Text(
-              post.description,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: EdgeInsets.all(24.w),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24.w)),
+              ),
+              child: Column(
+                children: [
+                  _PostHeader(post: post, color: Colors.white),
+                  SizedBox(height: 24.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        FontAwesomeIcons.medal,
+                        color: Colors.white,
+                        size: 28.w,
+                      ),
+                      SizedBox(width: 16.w),
+                      Icon(
+                        FontAwesomeIcons.handHoldingHeart,
+                        color: Colors.white,
+                        size: 32.w,
+                      ),
+                      SizedBox(width: 16.w),
+                      Icon(
+                        FontAwesomeIcons.trophy,
+                        color: Colors.white,
+                        size: 28.w,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 20.h),
-            _EngagementActions(
-              post: post,
-              isLiked: post.likeIds.contains(null),
-              color: Colors.white,
+            Padding(
+              padding: EdgeInsets.all(24.w),
+              child: Column(
+                children: [
+                  Text(
+                    post.description,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                      height: 1.5,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (user?.id != post.vendorId) ...[
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            if (user == null) return;
+                            if (isFollowing) {
+                              ref
+                                  .read(socialRepositoryProvider)
+                                  .unfollowUser(user.id, post.vendorId);
+                            } else {
+                              ref
+                                  .read(socialRepositoryProvider)
+                                  .followUser(user.id, post.vendorId);
+                            }
+                          },
+                          icon: Icon(
+                            isFollowing ? Icons.check : Icons.add,
+                            size: 16.w,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            isFollowing ? 'Following' : 'Follow',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.white),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 20.w,
+                              vertical: 12.h,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.w),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                      ],
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          // Trigger "Recommend" logic
+                          Share.share(
+                            'I highly recommend checking out ${post.vendorName} on RightLogistics! Their service is exceptional.\n\n${post.description}',
+                          );
+                          ref.read(socialRepositoryProvider).sharePost(post.id);
+                        },
+                        icon: Icon(
+                          Icons.verified_rounded,
+                          size: 16.w,
+                          color: AppTheme.accentOrange,
+                        ),
+                        label: Text(
+                          'Recommend',
+                          style: TextStyle(color: AppTheme.accentOrange),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20.w,
+                            vertical: 12.h,
+                          ),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.w),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20.h),
+                  Divider(color: Colors.white.withOpacity(0.2)),
+                  SizedBox(height: 10.h),
+                  _EngagementActions(
+                    post: post,
+                    isLiked: post.likeIds.contains(user?.id),
+                    userId: user?.id,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -649,7 +871,8 @@ class _PreOrderPostCardState extends ConsumerState<PreOrderPostCard> {
 class _PostHeader extends ConsumerWidget {
   final VendorPost post;
   final bool isOverImage;
-  const _PostHeader({required this.post, this.isOverImage = false});
+  final Color? color;
+  const _PostHeader({required this.post, this.isOverImage = false, this.color});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -742,18 +965,25 @@ class _PostHeader extends ConsumerWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14.sp,
-                      color: textColor,
+                      color: color != null ? color : textColor,
                     ),
                   ),
                   Text(
                     DateUtilsHelper.timeAgo(post.createdAt),
-                    style: TextStyle(color: subtextColor, fontSize: 11.sp),
+                    style: TextStyle(
+                      color: color != null ? color : subtextColor,
+                      fontSize: 11.sp,
+                    ),
                   ),
                 ],
               ),
             ),
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_horiz, size: 24.w, color: iconColor),
+              icon: Icon(
+                Icons.more_horiz,
+                size: 24.w,
+                color: color != null ? color : iconColor,
+              ),
               menuPadding: EdgeInsets.all(12.w),
               onSelected: (value) =>
                   _handleHeaderAction(context, ref, value, post, isOwner),
@@ -1311,7 +1541,7 @@ class _TypeBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.w),
       ),
       child: Text(
-        type.name.toUpperCase(),
+        type.name.replaceAll('_', ' ').toUpperCase(),
         style: TextStyle(
           color: color,
           fontSize: 10.sp,
@@ -1421,8 +1651,9 @@ class _PreOrderDialogState extends State<_PreOrderDialog> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 6.h),
-                      Text(
-                        '${widget.post.currency} ${widget.post.price.toStringAsFixed(2)}',
+                      CurrencyDisplay(
+                        amount: widget.post.price,
+                        fromCurrency: widget.post.currency,
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
@@ -1494,8 +1725,9 @@ class _PreOrderDialogState extends State<_PreOrderDialog> {
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  Text(
-                    '${widget.post.currency} ${totalPrice.toStringAsFixed(2)}',
+                  CurrencyDisplay(
+                    amount: totalPrice,
+                    fromCurrency: widget.post.currency,
                     style: TextStyle(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
@@ -1541,11 +1773,11 @@ class _PreOrderDialogState extends State<_PreOrderDialog> {
   }
 
   void _proceedToPurchase() {
-    // TODO: Implement purchase/payment flow
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Purchase of $_quantity item(s) initiated!'),
-        behavior: SnackBarBehavior.floating,
+    //Navigator.of(context).pop(); // Close dialog
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            PaymentScreen(post: widget.post, quantity: _quantity),
       ),
     );
   }
@@ -2124,5 +2356,262 @@ class _QuotationDialogState extends ConsumerState<_QuotationDialog> {
         ],
       ),
     );
+  }
+}
+
+class _PromoDialog extends StatelessWidget {
+  final VendorPost post;
+  const _PromoDialog({required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.w)),
+      child: Container(
+        padding: EdgeInsets.all(24.w),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24.w),
+          color: Theme.of(context).colorScheme.surface,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.local_offer_rounded, size: 48.w, color: Colors.amber),
+            SizedBox(height: 16.h),
+            Text(
+              'Special Offer',
+              style: GoogleFonts.outfit(
+                fontSize: 24.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Use this code at checkout to claim your offer!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16.w),
+                border: Border.all(
+                  color: Colors.amber,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    post.promoCode ?? 'NO CODE',
+                    style: GoogleFonts.outfit(
+                      fontSize: 28.sp,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: Colors.amber[900],
+                    ),
+                  ),
+                  if (post.promoExpiry != null) ...[
+                    SizedBox(height: 8.h),
+                    Text(
+                      'Expires: ${DateUtilsHelper.formatFullDate(post.promoExpiry!)}',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.amber[900],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            SizedBox(height: 24.h),
+            if (post.discountPercentage != null)
+              _DetailRow(
+                label: 'Discount',
+                value: '${post.discountPercentage!.toStringAsFixed(0)}%',
+              ),
+            if (post.discountAmount != null)
+              _DetailRow(
+                label: 'Discount Amount',
+                value:
+                    '${post.currency} ${post.discountAmount!.toStringAsFixed(2)}',
+              ),
+            if (post.minPurchaseAmount != null && post.minPurchaseAmount! > 0)
+              _DetailRow(
+                label: 'Min. Purchase',
+                value:
+                    '${post.currency} ${post.minPurchaseAmount!.toStringAsFixed(2)}',
+              ),
+            SizedBox(height: 24.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: post.promoCode ?? ''));
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Code copied to clipboard!')),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16.w),
+                  ),
+                ),
+                child: const Text('COPY CODE'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DetailRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+class SocialPostPreviewCard extends StatelessWidget {
+  final VendorPost post;
+  const SocialPostPreviewCard({super.key, required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        context.push('/social/detail', extra: post);
+      },
+      borderRadius: BorderRadius.circular(20.w),
+      child: Container(
+        width: 320.w,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(20.w),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.08),
+          ),
+        ),
+        child: Row(
+          children: [
+            if (post.imageUrls.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12.w),
+                child: CachedNetworkImage(
+                  imageUrl: post.imageUrls.first,
+                  width: 56.w,
+                  height: 56.w,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(color: Colors.white),
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: 56.w,
+                height: 56.w,
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12.w),
+                ),
+                child: Center(
+                  child: FaIcon(
+                    _getIconForType(post.type),
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20.w,
+                  ),
+                ),
+              ),
+            SizedBox(width: 14.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(child: _TypeBadge(type: post.type)),
+                      Text(
+                        DateUtilsHelper.timeAgo(post.createdAt),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 10.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6.h),
+                  Text(
+                    post.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getIconForType(PostType type) {
+    switch (type) {
+      case PostType.logistics:
+        return FontAwesomeIcons.truckFast;
+      case PostType.promotion:
+        return FontAwesomeIcons.tag;
+      case PostType.appreciation:
+        return FontAwesomeIcons.heart;
+      case PostType.pre_Order:
+        return FontAwesomeIcons.basketShopping;
+      case PostType.warehouse:
+        return FontAwesomeIcons.warehouse;
+      case PostType.new_Item:
+        return FontAwesomeIcons.boxOpen;
+      default:
+        return FontAwesomeIcons.bullhorn;
+    }
   }
 }

@@ -60,4 +60,9 @@ final recommendationIdsProvider = StreamProvider.autoDispose
           .watchRecommendationIds(vendorId);
     });
 
-// socialSearchQueryProvider is now deprecated in favor of global searchQueryProvider
+final postProvider = StreamProvider.autoDispose.family<VendorPost?, String>((
+  ref,
+  postId,
+) {
+  return ref.watch(socialRepositoryProvider).watchPost(postId);
+});

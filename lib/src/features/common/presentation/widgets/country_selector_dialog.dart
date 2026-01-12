@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rightlogistics/src/core/domain/models/country.dart';
-import 'package:rightlogistics/src/core/theme/app_theme.dart';
 
 class CountrySelectorDialog extends StatefulWidget {
   final Function(Country) onSelect;
@@ -42,9 +41,9 @@ class _CountrySelectorDialogState extends State<CountrySelectorDialog> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -52,12 +51,12 @@ class _CountrySelectorDialogState extends State<CountrySelectorDialog> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const Text(
+                Text(
                   'Select Country',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryBlue,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const Spacer(),
@@ -103,16 +102,16 @@ class _CountrySelectorDialogState extends State<CountrySelectorDialog> {
                   ),
                   subtitle: Text(
                     'Cur: ${country.currency}  •  ${country.dialCode}',
-                    style: const TextStyle(
-                      color: AppTheme.textGrey,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
                   trailing: Text(
                     country.code,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   onTap: () {

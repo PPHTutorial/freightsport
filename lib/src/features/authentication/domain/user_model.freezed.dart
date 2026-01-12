@@ -1315,6 +1315,320 @@ abstract class _CourierKyc implements CourierKyc {
       throw _privateConstructorUsedError;
 }
 
+PayoutDetails _$PayoutDetailsFromJson(Map<String, dynamic> json) {
+  return _PayoutDetails.fromJson(json);
+}
+
+/// @nodoc
+mixin _$PayoutDetails {
+  String get accountName => throw _privateConstructorUsedError; // Provide Name
+  String get accountNumber =>
+      throw _privateConstructorUsedError; // or IBAN, or Mobile Number
+  String get bankName =>
+      throw _privateConstructorUsedError; // or Provider Name (e.g. MTN, Binance)
+  String get branchCode => throw _privateConstructorUsedError; // Optional
+  String get swiftCode => throw _privateConstructorUsedError; // Optional
+  String get type =>
+      throw _privateConstructorUsedError; // bank_transfer, mobile_money, crypto_wallet
+  String get currency => throw _privateConstructorUsedError;
+
+  /// Serializes this PayoutDetails to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of PayoutDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $PayoutDetailsCopyWith<PayoutDetails> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $PayoutDetailsCopyWith<$Res> {
+  factory $PayoutDetailsCopyWith(
+    PayoutDetails value,
+    $Res Function(PayoutDetails) then,
+  ) = _$PayoutDetailsCopyWithImpl<$Res, PayoutDetails>;
+  @useResult
+  $Res call({
+    String accountName,
+    String accountNumber,
+    String bankName,
+    String branchCode,
+    String swiftCode,
+    String type,
+    String currency,
+  });
+}
+
+/// @nodoc
+class _$PayoutDetailsCopyWithImpl<$Res, $Val extends PayoutDetails>
+    implements $PayoutDetailsCopyWith<$Res> {
+  _$PayoutDetailsCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of PayoutDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? accountName = null,
+    Object? accountNumber = null,
+    Object? bankName = null,
+    Object? branchCode = null,
+    Object? swiftCode = null,
+    Object? type = null,
+    Object? currency = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            accountName: null == accountName
+                ? _value.accountName
+                : accountName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            accountNumber: null == accountNumber
+                ? _value.accountNumber
+                : accountNumber // ignore: cast_nullable_to_non_nullable
+                      as String,
+            bankName: null == bankName
+                ? _value.bankName
+                : bankName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            branchCode: null == branchCode
+                ? _value.branchCode
+                : branchCode // ignore: cast_nullable_to_non_nullable
+                      as String,
+            swiftCode: null == swiftCode
+                ? _value.swiftCode
+                : swiftCode // ignore: cast_nullable_to_non_nullable
+                      as String,
+            type: null == type
+                ? _value.type
+                : type // ignore: cast_nullable_to_non_nullable
+                      as String,
+            currency: null == currency
+                ? _value.currency
+                : currency // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$PayoutDetailsImplCopyWith<$Res>
+    implements $PayoutDetailsCopyWith<$Res> {
+  factory _$$PayoutDetailsImplCopyWith(
+    _$PayoutDetailsImpl value,
+    $Res Function(_$PayoutDetailsImpl) then,
+  ) = __$$PayoutDetailsImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String accountName,
+    String accountNumber,
+    String bankName,
+    String branchCode,
+    String swiftCode,
+    String type,
+    String currency,
+  });
+}
+
+/// @nodoc
+class __$$PayoutDetailsImplCopyWithImpl<$Res>
+    extends _$PayoutDetailsCopyWithImpl<$Res, _$PayoutDetailsImpl>
+    implements _$$PayoutDetailsImplCopyWith<$Res> {
+  __$$PayoutDetailsImplCopyWithImpl(
+    _$PayoutDetailsImpl _value,
+    $Res Function(_$PayoutDetailsImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PayoutDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? accountName = null,
+    Object? accountNumber = null,
+    Object? bankName = null,
+    Object? branchCode = null,
+    Object? swiftCode = null,
+    Object? type = null,
+    Object? currency = null,
+  }) {
+    return _then(
+      _$PayoutDetailsImpl(
+        accountName: null == accountName
+            ? _value.accountName
+            : accountName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        accountNumber: null == accountNumber
+            ? _value.accountNumber
+            : accountNumber // ignore: cast_nullable_to_non_nullable
+                  as String,
+        bankName: null == bankName
+            ? _value.bankName
+            : bankName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        branchCode: null == branchCode
+            ? _value.branchCode
+            : branchCode // ignore: cast_nullable_to_non_nullable
+                  as String,
+        swiftCode: null == swiftCode
+            ? _value.swiftCode
+            : swiftCode // ignore: cast_nullable_to_non_nullable
+                  as String,
+        type: null == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
+                  as String,
+        currency: null == currency
+            ? _value.currency
+            : currency // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PayoutDetailsImpl implements _PayoutDetails {
+  const _$PayoutDetailsImpl({
+    this.accountName = '',
+    this.accountNumber = '',
+    this.bankName = '',
+    this.branchCode = '',
+    this.swiftCode = '',
+    this.type = 'bank_transfer',
+    this.currency = 'USD',
+  });
+
+  factory _$PayoutDetailsImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PayoutDetailsImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final String accountName;
+  // Provide Name
+  @override
+  @JsonKey()
+  final String accountNumber;
+  // or IBAN, or Mobile Number
+  @override
+  @JsonKey()
+  final String bankName;
+  // or Provider Name (e.g. MTN, Binance)
+  @override
+  @JsonKey()
+  final String branchCode;
+  // Optional
+  @override
+  @JsonKey()
+  final String swiftCode;
+  // Optional
+  @override
+  @JsonKey()
+  final String type;
+  // bank_transfer, mobile_money, crypto_wallet
+  @override
+  @JsonKey()
+  final String currency;
+
+  @override
+  String toString() {
+    return 'PayoutDetails(accountName: $accountName, accountNumber: $accountNumber, bankName: $bankName, branchCode: $branchCode, swiftCode: $swiftCode, type: $type, currency: $currency)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PayoutDetailsImpl &&
+            (identical(other.accountName, accountName) ||
+                other.accountName == accountName) &&
+            (identical(other.accountNumber, accountNumber) ||
+                other.accountNumber == accountNumber) &&
+            (identical(other.bankName, bankName) ||
+                other.bankName == bankName) &&
+            (identical(other.branchCode, branchCode) ||
+                other.branchCode == branchCode) &&
+            (identical(other.swiftCode, swiftCode) ||
+                other.swiftCode == swiftCode) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.currency, currency) ||
+                other.currency == currency));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    accountName,
+    accountNumber,
+    bankName,
+    branchCode,
+    swiftCode,
+    type,
+    currency,
+  );
+
+  /// Create a copy of PayoutDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PayoutDetailsImplCopyWith<_$PayoutDetailsImpl> get copyWith =>
+      __$$PayoutDetailsImplCopyWithImpl<_$PayoutDetailsImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PayoutDetailsImplToJson(this);
+  }
+}
+
+abstract class _PayoutDetails implements PayoutDetails {
+  const factory _PayoutDetails({
+    final String accountName,
+    final String accountNumber,
+    final String bankName,
+    final String branchCode,
+    final String swiftCode,
+    final String type,
+    final String currency,
+  }) = _$PayoutDetailsImpl;
+
+  factory _PayoutDetails.fromJson(Map<String, dynamic> json) =
+      _$PayoutDetailsImpl.fromJson;
+
+  @override
+  String get accountName; // Provide Name
+  @override
+  String get accountNumber; // or IBAN, or Mobile Number
+  @override
+  String get bankName; // or Provider Name (e.g. MTN, Binance)
+  @override
+  String get branchCode; // Optional
+  @override
+  String get swiftCode; // Optional
+  @override
+  String get type; // bank_transfer, mobile_money, crypto_wallet
+  @override
+  String get currency;
+
+  /// Create a copy of PayoutDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PayoutDetailsImplCopyWith<_$PayoutDetailsImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 UserModel _$UserModelFromJson(Map<String, dynamic> json) {
   return _UserModel.fromJson(json);
 }
@@ -1338,6 +1652,8 @@ mixin _$UserModel {
   IdentityInfo? get identity => throw _privateConstructorUsedError;
   VendorKyc? get vendorKyc => throw _privateConstructorUsedError;
   CourierKyc? get courierKyc => throw _privateConstructorUsedError;
+  PayoutDetails? get payoutDetails =>
+      throw _privateConstructorUsedError; // Added PayoutDetails
   String? get verificationNote => throw _privateConstructorUsedError;
   List<String> get followerIds => throw _privateConstructorUsedError;
   List<String> get followingIds => throw _privateConstructorUsedError;
@@ -1380,6 +1696,7 @@ abstract class $UserModelCopyWith<$Res> {
     IdentityInfo? identity,
     VendorKyc? vendorKyc,
     CourierKyc? courierKyc,
+    PayoutDetails? payoutDetails,
     String? verificationNote,
     List<String> followerIds,
     List<String> followingIds,
@@ -1395,6 +1712,7 @@ abstract class $UserModelCopyWith<$Res> {
   $IdentityInfoCopyWith<$Res>? get identity;
   $VendorKycCopyWith<$Res>? get vendorKyc;
   $CourierKycCopyWith<$Res>? get courierKyc;
+  $PayoutDetailsCopyWith<$Res>? get payoutDetails;
 }
 
 /// @nodoc
@@ -1428,6 +1746,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? identity = freezed,
     Object? vendorKyc = freezed,
     Object? courierKyc = freezed,
+    Object? payoutDetails = freezed,
     Object? verificationNote = freezed,
     Object? followerIds = null,
     Object? followingIds = null,
@@ -1504,6 +1823,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
                 ? _value.courierKyc
                 : courierKyc // ignore: cast_nullable_to_non_nullable
                       as CourierKyc?,
+            payoutDetails: freezed == payoutDetails
+                ? _value.payoutDetails
+                : payoutDetails // ignore: cast_nullable_to_non_nullable
+                      as PayoutDetails?,
             verificationNote: freezed == verificationNote
                 ? _value.verificationNote
                 : verificationNote // ignore: cast_nullable_to_non_nullable
@@ -1600,6 +1923,20 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
       return _then(_value.copyWith(courierKyc: value) as $Val);
     });
   }
+
+  /// Create a copy of UserModel
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $PayoutDetailsCopyWith<$Res>? get payoutDetails {
+    if (_value.payoutDetails == null) {
+      return null;
+    }
+
+    return $PayoutDetailsCopyWith<$Res>(_value.payoutDetails!, (value) {
+      return _then(_value.copyWith(payoutDetails: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -1628,6 +1965,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
     IdentityInfo? identity,
     VendorKyc? vendorKyc,
     CourierKyc? courierKyc,
+    PayoutDetails? payoutDetails,
     String? verificationNote,
     List<String> followerIds,
     List<String> followingIds,
@@ -1647,6 +1985,8 @@ abstract class _$$UserModelImplCopyWith<$Res>
   $VendorKycCopyWith<$Res>? get vendorKyc;
   @override
   $CourierKycCopyWith<$Res>? get courierKyc;
+  @override
+  $PayoutDetailsCopyWith<$Res>? get payoutDetails;
 }
 
 /// @nodoc
@@ -1679,6 +2019,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? identity = freezed,
     Object? vendorKyc = freezed,
     Object? courierKyc = freezed,
+    Object? payoutDetails = freezed,
     Object? verificationNote = freezed,
     Object? followerIds = null,
     Object? followingIds = null,
@@ -1755,6 +2096,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
             ? _value.courierKyc
             : courierKyc // ignore: cast_nullable_to_non_nullable
                   as CourierKyc?,
+        payoutDetails: freezed == payoutDetails
+            ? _value.payoutDetails
+            : payoutDetails // ignore: cast_nullable_to_non_nullable
+                  as PayoutDetails?,
         verificationNote: freezed == verificationNote
             ? _value.verificationNote
             : verificationNote // ignore: cast_nullable_to_non_nullable
@@ -1816,6 +2161,7 @@ class _$UserModelImpl implements _UserModel {
     this.identity,
     this.vendorKyc,
     this.courierKyc,
+    this.payoutDetails,
     this.verificationNote,
     final List<String> followerIds = const [],
     final List<String> followingIds = const [],
@@ -1878,6 +2224,9 @@ class _$UserModelImpl implements _UserModel {
   @override
   final CourierKyc? courierKyc;
   @override
+  final PayoutDetails? payoutDetails;
+  // Added PayoutDetails
+  @override
   final String? verificationNote;
   final List<String> _followerIds;
   @override
@@ -1936,7 +2285,7 @@ class _$UserModelImpl implements _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, email: $email, name: $name, username: $username, role: $role, photoUrl: $photoUrl, phoneNumber: $phoneNumber, verificationStatus: $verificationStatus, isProfileComplete: $isProfileComplete, kycData: $kycData, companyLogo: $companyLogo, companyBanner: $companyBanner, address: $address, identity: $identity, vendorKyc: $vendorKyc, courierKyc: $courierKyc, verificationNote: $verificationNote, followerIds: $followerIds, followingIds: $followingIds, recommendationIds: $recommendationIds, accountStatus: $accountStatus, blockedUserIds: $blockedUserIds, averageRating: $averageRating, totalReviews: $totalReviews, ratingBreakdown: $ratingBreakdown)';
+    return 'UserModel(id: $id, email: $email, name: $name, username: $username, role: $role, photoUrl: $photoUrl, phoneNumber: $phoneNumber, verificationStatus: $verificationStatus, isProfileComplete: $isProfileComplete, kycData: $kycData, companyLogo: $companyLogo, companyBanner: $companyBanner, address: $address, identity: $identity, vendorKyc: $vendorKyc, courierKyc: $courierKyc, payoutDetails: $payoutDetails, verificationNote: $verificationNote, followerIds: $followerIds, followingIds: $followingIds, recommendationIds: $recommendationIds, accountStatus: $accountStatus, blockedUserIds: $blockedUserIds, averageRating: $averageRating, totalReviews: $totalReviews, ratingBreakdown: $ratingBreakdown)';
   }
 
   @override
@@ -1970,6 +2319,8 @@ class _$UserModelImpl implements _UserModel {
                 other.vendorKyc == vendorKyc) &&
             (identical(other.courierKyc, courierKyc) ||
                 other.courierKyc == courierKyc) &&
+            (identical(other.payoutDetails, payoutDetails) ||
+                other.payoutDetails == payoutDetails) &&
             (identical(other.verificationNote, verificationNote) ||
                 other.verificationNote == verificationNote) &&
             const DeepCollectionEquality().equals(
@@ -2020,6 +2371,7 @@ class _$UserModelImpl implements _UserModel {
     identity,
     vendorKyc,
     courierKyc,
+    payoutDetails,
     verificationNote,
     const DeepCollectionEquality().hash(_followerIds),
     const DeepCollectionEquality().hash(_followingIds),
@@ -2063,6 +2415,7 @@ abstract class _UserModel implements UserModel {
     final IdentityInfo? identity,
     final VendorKyc? vendorKyc,
     final CourierKyc? courierKyc,
+    final PayoutDetails? payoutDetails,
     final String? verificationNote,
     final List<String> followerIds,
     final List<String> followingIds,
@@ -2109,6 +2462,8 @@ abstract class _UserModel implements UserModel {
   VendorKyc? get vendorKyc;
   @override
   CourierKyc? get courierKyc;
+  @override
+  PayoutDetails? get payoutDetails; // Added PayoutDetails
   @override
   String? get verificationNote;
   @override

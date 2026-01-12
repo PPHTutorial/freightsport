@@ -126,6 +126,28 @@ Map<String, dynamic> _$$CourierKycImplToJson(_$CourierKycImpl instance) =>
       'vehicleRegNumber': instance.vehicleRegNumber,
     };
 
+_$PayoutDetailsImpl _$$PayoutDetailsImplFromJson(Map<String, dynamic> json) =>
+    _$PayoutDetailsImpl(
+      accountName: json['accountName'] as String? ?? '',
+      accountNumber: json['accountNumber'] as String? ?? '',
+      bankName: json['bankName'] as String? ?? '',
+      branchCode: json['branchCode'] as String? ?? '',
+      swiftCode: json['swiftCode'] as String? ?? '',
+      type: json['type'] as String? ?? 'bank_transfer',
+      currency: json['currency'] as String? ?? 'USD',
+    );
+
+Map<String, dynamic> _$$PayoutDetailsImplToJson(_$PayoutDetailsImpl instance) =>
+    <String, dynamic>{
+      'accountName': instance.accountName,
+      'accountNumber': instance.accountNumber,
+      'bankName': instance.bankName,
+      'branchCode': instance.branchCode,
+      'swiftCode': instance.swiftCode,
+      'type': instance.type,
+      'currency': instance.currency,
+    };
+
 _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
     _$UserModelImpl(
       id: json['id'] as String,
@@ -157,6 +179,11 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       courierKyc: json['courierKyc'] == null
           ? null
           : CourierKyc.fromJson(json['courierKyc'] as Map<String, dynamic>),
+      payoutDetails: json['payoutDetails'] == null
+          ? null
+          : PayoutDetails.fromJson(
+              json['payoutDetails'] as Map<String, dynamic>,
+            ),
       verificationNote: json['verificationNote'] as String?,
       followerIds:
           (json['followerIds'] as List<dynamic>?)
@@ -209,6 +236,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'identity': instance.identity?.toJson(),
       'vendorKyc': instance.vendorKyc?.toJson(),
       'courierKyc': instance.courierKyc?.toJson(),
+      'payoutDetails': instance.payoutDetails?.toJson(),
       'verificationNote': instance.verificationNote,
       'followerIds': instance.followerIds,
       'followingIds': instance.followingIds,

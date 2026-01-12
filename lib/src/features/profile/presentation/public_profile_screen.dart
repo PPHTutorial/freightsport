@@ -34,6 +34,7 @@ class PublicProfileScreen extends ConsumerWidget {
 
     // Update Parent AppBar Branding
     Future.microtask(() {
+      if (!context.mounted) return;
       final location = GoRouterState.of(context).uri.path;
       final bizName = u.role == UserRole.vendor
           ? (u.vendorKyc?.businessName ??
@@ -51,7 +52,10 @@ class PublicProfileScreen extends ConsumerWidget {
                   AppBarAction(
                     icon: Icons.edit_note_rounded,
                     label: 'Edit',
-                    onPressed: () => context.push('/onboarding/setup?step=1'),
+                    onPressed: () {
+                      if (context.mounted)
+                        context.push('/onboarding/setup?step=1');
+                    },
                   ),
               ],
             ),
@@ -190,24 +194,33 @@ class PublicProfileScreen extends ConsumerWidget {
                       _buildInfoRow(
                         Icons.local_shipping,
                         'Vehicle Type',
-                        u.courierKyc?.vehicleType ?? 'Not Specified',
+                        u.courierKyc?.vehicleType ??
+                            u.kycData?['vehicleType'] as String? ??
+                            'Not Specified',
                       ),
                       _buildInfoRow(
                         Icons.numbers,
                         'Registration',
-                        u.courierKyc?.vehicleRegNumber ?? 'Not Specified',
+                        u.courierKyc?.vehicleRegNumber ??
+                            u.kycData?['vehicleRegNumber'] as String? ??
+                            'Not Specified',
                       ),
                     ],
                     if (u.role == UserRole.vendor) ...[
                       _buildInfoRow(
                         Icons.business_center,
                         'Business Name',
-                        u.vendorKyc?.businessName ?? u.name,
+                        u.vendorKyc?.businessName ??
+                            u.kycData?['businessName'] as String? ??
+                            u.kycData?['name'] as String? ??
+                            u.name,
                       ),
                       _buildInfoRow(
                         Icons.description,
                         'Description',
                         u.vendorKyc?.businessDescription ??
+                            u.kycData?['description'] as String? ??
+                            u.kycData?['businessDescription'] as String? ??
                             'No description provided.',
                       ),
                     ],

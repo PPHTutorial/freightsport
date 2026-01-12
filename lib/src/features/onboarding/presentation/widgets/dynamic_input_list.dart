@@ -62,11 +62,11 @@ class DynamicInputList<T> extends StatelessWidget {
         ...List.generate(items.length, (index) {
           return Padding(
             padding: EdgeInsets.only(bottom: 12.h),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Expanded(child: itemBuilder(index, items[index])),
-                SizedBox(width: 8.w),
+                itemBuilder(index, items[index]),
+                SizedBox(height: 4.h),
                 IconButton(
                   onPressed: () => onRemove(index),
                   icon: Icon(

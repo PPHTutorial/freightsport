@@ -92,6 +92,23 @@ class CourierKyc with _$CourierKyc {
 }
 
 @freezed
+class PayoutDetails with _$PayoutDetails {
+  const factory PayoutDetails({
+    @Default('') String accountName, // Provide Name
+    @Default('') String accountNumber, // or IBAN, or Mobile Number
+    @Default('') String bankName, // or Provider Name (e.g. MTN, Binance)
+    @Default('') String branchCode, // Optional
+    @Default('') String swiftCode, // Optional
+    @Default('bank_transfer')
+    String type, // bank_transfer, mobile_money, crypto_wallet
+    @Default('USD') String currency,
+  }) = _PayoutDetails;
+
+  factory PayoutDetails.fromJson(Map<String, dynamic> json) =>
+      _$PayoutDetailsFromJson(json);
+}
+
+@freezed
 class UserModel with _$UserModel {
   const factory UserModel({
     required String id,
@@ -111,6 +128,7 @@ class UserModel with _$UserModel {
     IdentityInfo? identity,
     VendorKyc? vendorKyc,
     CourierKyc? courierKyc,
+    PayoutDetails? payoutDetails, // Added PayoutDetails
     String? verificationNote,
     @Default([]) List<String> followerIds,
     @Default([]) List<String> followingIds,

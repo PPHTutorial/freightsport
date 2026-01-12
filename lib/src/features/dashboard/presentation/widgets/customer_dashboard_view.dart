@@ -20,6 +20,7 @@ class CustomerDashboardView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Schedule AppBar update
     Future.microtask(() {
+      if (!context.mounted) return;
       final location = GoRouterState.of(context).uri.path;
       ref
           .read(appBarConfigProvider(location).notifier)
@@ -29,52 +30,129 @@ class CustomerDashboardView extends ConsumerWidget {
               centerTitle: false,
               actions: [
                 AppBarAction(
+                  icon: FontAwesomeIcons.gear,
+                  label: 'Settings',
+                  onPressed: () {
+                    if (context.mounted) context.push('/settings');
+                  },
+                ),
+                AppBarAction(
                   icon: FontAwesomeIcons.calculator,
                   label: 'Get Quote',
-                  onPressed: () => context.push('/get-quote'),
+                  onPressed: () {
+                    if (context.mounted) context.push('/get-quote');
+                  },
                 ),
                 AppBarAction(
                   icon: FontAwesomeIcons.circlePlus,
                   label: 'Book Shipment',
-                  onPressed: () => context.push('/admin/create-shipment'),
+                  onPressed: () {
+                    if (context.mounted) context.push('/admin/create-shipment');
+                  },
                 ),
                 AppBarAction(
                   icon: FontAwesomeIcons.user,
                   label: 'Profile',
-                  onPressed: () => context.push('/profile'),
+                  onPressed: () {
+                    if (context.mounted) context.push('/profile');
+                  },
                 ),
                 AppBarAction(
                   icon: FontAwesomeIcons.magnifyingGlassLocation,
                   label: 'Tracking',
-                  onPressed: () => context.push('/tracking'),
+                  onPressed: () {
+                    if (context.mounted) context.push('/tracking');
+                  },
                 ),
               ],
             ),
           );
     });
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildPremiumHeader(context, ref),
-            SizedBox(height: 24.h),
-            _buildConciergeSection(context, ref),
-            SizedBox(height: 32.h),
-            _buildLogisticsOverview(context, ref),
-            SizedBox(height: 32.h),
-            _buildAnalyticsSection(context, ref),
-            SizedBox(height: 32.h),
-            _buildModernTracking(context),
-            SizedBox(height: 40.h),
-            _buildActionGrid(context),
-            SizedBox(height: 40.h),
-            _buildActivitySection(context, ref),
-          ],
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPremiumHeader(context, ref),
+          SizedBox(height: 24.h),
+          _buildConciergeSection(context, ref),
+          SizedBox(height: 32.h),
+          _buildLogisticsOverview(context, ref),
+          SizedBox(height: 32.h),
+          _buildAnalyticsSection(context, ref),
+          SizedBox(height: 32.h),
+          _buildModernTracking(context),
+          SizedBox(height: 40.h),
+          _buildActionGrid(context),
+          SizedBox(height: 40.h),
+          _buildActivitySection(context, ref),
+          SizedBox(height: 32.h),
+          _buildSettingsAccess(context),
+          SizedBox(height: 48.h),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsAccess(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(24.w),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
         ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: FaIcon(
+              FontAwesomeIcons.gear,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20.w,
+            ),
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'App Settings',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.sp,
+                  ),
+                ),
+                Text(
+                  'Preferences & Base Currency',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => context.push('/settings'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.w),
+              ),
+            ),
+            child: const Text('OPEN'),
+          ),
+        ],
       ),
     );
   }

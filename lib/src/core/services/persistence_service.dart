@@ -17,6 +17,11 @@ class PersistenceService {
 
   String? getThemeMode() => _prefs.getString(_themeKey);
   Future<void> setThemeMode(String mode) => _prefs.setString(_themeKey, mode);
+
+  static const String _currencyKey = 'base_currency_country_code';
+  String? getBaseCountryCode() => _prefs.getString(_currencyKey);
+  Future<void> setBaseCountryCode(String code) =>
+      _prefs.setString(_currencyKey, code);
 }
 
 final persistenceServiceProvider = Provider<PersistenceService>((ref) {

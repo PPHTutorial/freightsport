@@ -246,6 +246,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final asyncUser = ref.watch(authStateChangesProvider);
 
     Future.microtask(() {
+      if (!mounted) return;
       final location = GoRouterState.of(context).uri.path;
       ref
           .read(appBarConfigProvider(location).notifier)
@@ -256,12 +257,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 AppBarAction(
                   icon: FontAwesomeIcons.gear,
                   label: 'Settings',
-                  onPressed: () => context.push('/settings'),
+                  onPressed: () {
+                    if (mounted) context.push('/settings');
+                  },
                 ),
                 AppBarAction(
                   icon: FontAwesomeIcons.headset,
                   label: 'Support',
-                  onPressed: () => context.push('/support'),
+                  onPressed: () {
+                    if (mounted) context.push('/support');
+                  },
                 ),
               ],
             ),

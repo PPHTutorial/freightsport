@@ -84,16 +84,92 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
     final bizName = (vk?.businessName.isNotEmpty ?? false)
         ? vk!.businessName
         : v.name;
-    final rates = vk?.vendorRates ?? [];
-    final routes = vk?.vendorRoutes ?? [];
-    final faqs = vk?.vendorFAQs ?? [];
-    final services = vk?.vendorServices ?? [];
-    final phones = vk?.vendorPhones ?? [];
-    final locations = vk?.vendorAddresses ?? [];
-    final socials = vk?.vendorSocials ?? [];
+    // --- Legacy Fallback Helper ---
+    List<Map<String, String>> getLegacyStringList(
+      String key, {
+      String? altKey,
+    }) {
+      final data = v.kycData;
+      if (data == null) return [];
+      final legacyData = data[key] ?? (altKey != null ? data[altKey] : null);
+      if (legacyData is List) {
+        return legacyData
+            .map((e) {
+              if (e is Map) {
+                return e.map(
+                  (k, val) => MapEntry(k.toString(), val?.toString() ?? ''),
+                );
+              }
+              return <String, String>{};
+            })
+            .where((m) => m.isNotEmpty)
+            .toList();
+      }
+      return [];
+    }
+
+    final rates = vk != null && vk.vendorRates.isNotEmpty
+        ? vk.vendorRates
+        : getLegacyStringList('vendorRates', altKey: 'rates');
+    final routes = vk != null && vk.vendorRoutes.isNotEmpty
+        ? vk.vendorRoutes
+        : getLegacyStringList('vendorRoutes', altKey: 'routes');
+    final faqs = vk != null && vk.vendorFAQs.isNotEmpty
+        ? vk.vendorFAQs
+        : getLegacyStringList('vendorFAQs', altKey: 'faqs');
+
+    final legacyServicesData =
+        v.kycData?['vendorServices'] ?? v.kycData?['services'];
+    final services = vk != null && vk.vendorServices.isNotEmpty
+        ? vk.vendorServices
+        : (legacyServicesData is List
+              ? List<String>.from(legacyServicesData.map((e) => e.toString()))
+              : <String>[]);
+
+    final phones = vk != null && vk.vendorPhones.isNotEmpty
+        ? vk.vendorPhones
+        : getLegacyStringList('vendorPhones', altKey: 'phones');
+
+    final legacyLocationsData =
+        v.kycData?['vendorAddresses'] ?? v.kycData?['locations'];
+    final locations = vk != null && vk.vendorAddresses.isNotEmpty
+        ? vk.vendorAddresses
+        : (legacyLocationsData is List
+              ? legacyLocationsData
+                    .map((loc) {
+                      if (loc is Map) {
+                        final lPhones =
+                            loc['phones'] ??
+                            loc['phoneNumber'] ??
+                            loc['contacts'];
+                        return {
+                          'label': (loc['label'] ?? loc['locationName'] ?? '')
+                              .toString(),
+                          'country': (loc['country'] ?? '').toString(),
+                          'street': (loc['street'] ?? loc['address'] ?? '')
+                              .toString(),
+                          'city': (loc['city'] ?? '').toString(),
+                          'state': (loc['state'] ?? loc['region'] ?? '')
+                              .toString(),
+                          'zip': (loc['zip'] ?? '').toString(),
+                          'phones': lPhones is List
+                              ? lPhones.map((p) => p.toString()).toList()
+                              : <String>[],
+                        };
+                      }
+                      return <String, dynamic>{};
+                    })
+                    .where((m) => m.isNotEmpty)
+                    .toList()
+              : <Map<String, dynamic>>[]);
+
+    final socials = vk != null && vk.vendorSocials.isNotEmpty
+        ? vk.vendorSocials
+        : getLegacyStringList('vendorSocials', altKey: 'socials');
 
     // Update Parent AppBar Branding
     Future.microtask(() {
+      if (!mounted) return;
       final location = GoRouterState.of(context).uri.path;
       final config = ref.read(appBarConfigProvider(location));
       if (config.title != bizName) {
@@ -107,13 +183,17 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                     AppBarAction(
                       icon: FontAwesomeIcons.penToSquare,
                       label: 'Edit',
-                      onPressed: () => context.push('/onboarding/setup?step=1'),
+                      onPressed: () {
+                        if (mounted) context.push('/onboarding/setup?step=1');
+                      },
                     ),
                   AppBarAction(
                     icon: FontAwesomeIcons.shareNodes,
                     label: 'Share',
                     onPressed: () {
-                      Share.share("Check out $bizName on RightLogistics!");
+                      if (mounted) {
+                        Share.share("Check out $bizName on RightLogistics!");
+                      }
                     },
                   ),
                 ],
@@ -574,8 +654,11 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                   return SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
                       return Padding(
-                        padding: EdgeInsets.all(16.w),
-                        child: SocialPostCard(post: posts[index]),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 8.h,
+                        ),
+                        child: SocialPostPreviewCard(post: posts[index]),
                       );
                     }, childCount: posts.length),
                   );

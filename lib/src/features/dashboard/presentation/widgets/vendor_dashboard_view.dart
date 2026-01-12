@@ -22,6 +22,7 @@ class VendorDashboardView extends ConsumerWidget {
 
     // Update AppBar Branding
     Future.microtask(() {
+      if (!context.mounted) return;
       final businessName = user?.vendorKyc?.businessName;
       final location = GoRouterState.of(context).uri.path;
       ref
@@ -32,42 +33,118 @@ class VendorDashboardView extends ConsumerWidget {
               centerTitle: false,
               actions: [
                 AppBarAction(
+                  icon: FontAwesomeIcons.gear,
+                  label: 'Settings',
+                  onPressed: () {
+                    if (context.mounted) context.push('/settings');
+                  },
+                ),
+                AppBarAction(
                   icon: FontAwesomeIcons.bell,
                   label: 'Notifications',
-                  onPressed: () => context.push('/notifications'),
+                  onPressed: () {
+                    if (context.mounted) context.push('/notifications');
+                  },
                 ),
                 AppBarAction(
                   icon: FontAwesomeIcons.user,
                   label: 'Profile',
-                  onPressed: () => context.push('/profile'),
+                  onPressed: () {
+                    if (context.mounted) context.push('/profile');
+                  },
                 ),
               ],
             ),
           );
     });
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildVendorHeader(context, ref),
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildVendorHeader(context, ref),
+          SizedBox(height: 32.h),
+          if (user?.payoutDetails == null) ...[
+            _buildPayoutWarning(context),
             SizedBox(height: 32.h),
-            _buildBusinessMetrics(context, ref),
-            SizedBox(height: 32.h),
-            _buildAnalyticsSection(context, ref),
-            SizedBox(height: 32.h),
-            _buildVendorActions(context),
-            SizedBox(height: 32.h),
-            _buildServicesSection(context, ref),
-            SizedBox(height: 32.h),
-            _buildSocialUpdatesSection(context, ref),
-            SizedBox(height: 32.h),
-            _buildInventorySection(context, ref),
           ],
+          _buildBusinessMetrics(context, ref),
+          SizedBox(height: 32.h),
+          _buildAnalyticsSection(context, ref),
+          SizedBox(height: 32.h),
+          _buildVendorActions(context),
+          SizedBox(height: 32.h),
+          _buildServicesSection(context, ref),
+          SizedBox(height: 32.h),
+          _buildSocialUpdatesSection(context, ref),
+          SizedBox(height: 32.h),
+          _buildSettingsAccess(context),
+          SizedBox(height: 32.h),
+          _buildInventorySection(context, ref),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsAccess(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(24.w),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
         ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: FaIcon(
+              FontAwesomeIcons.gear,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20.w,
+            ),
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'App Preferences',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.sp,
+                  ),
+                ),
+                Text(
+                  'Currency, Theme & Language',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => context.push('/settings'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.w),
+              ),
+            ),
+            child: const Text('MANAGE'),
+          ),
+        ],
       ),
     );
   }
@@ -367,17 +444,14 @@ class VendorDashboardView extends ConsumerWidget {
               );
             }
             return SizedBox(
-              height: 280.h,
+              height: 120.h,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(vertical: 8.h),
                 itemCount: posts.length.clamp(0, 5),
                 separatorBuilder: (_, __) => SizedBox(width: 16.w),
                 itemBuilder: (context, index) {
-                  return SizedBox(
-                    width: 300.w,
-                    child: SocialPostCard(post: posts[index]),
-                  );
+                  return SocialPostPreviewCard(post: posts[index]);
                 },
               ),
             );
@@ -527,6 +601,67 @@ class VendorDashboardView extends ConsumerWidget {
     if (count == 0) return 'N/A';
     final avg = totalDays / count;
     return '${avg.toStringAsFixed(1)} Days';
+  }
+
+  Widget _buildPayoutWarning(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(16.w),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            FontAwesomeIcons.triangleExclamation,
+            color: Theme.of(context).colorScheme.onErrorContainer,
+            size: 24.w,
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Payout Method Missing',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.sp,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'You won\'t be able to receive earnings.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                    fontSize: 12.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              context.push('/onboarding/setup?step=2');
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.onErrorContainer.withOpacity(0.1),
+            ),
+            child: Text(
+              'Setup Now',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

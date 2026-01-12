@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rightlogistics/src/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rightlogistics/src/features/authentication/data/auth_repository.dart';
+import 'package:rightlogistics/src/features/authentication/domain/user_model.dart';
 import 'package:rightlogistics/src/features/social/domain/social_models.dart';
 import 'package:rightlogistics/src/core/utils/size_config.dart';
 import 'package:rightlogistics/src/core/presentation/widgets/empty_state.dart';
@@ -48,15 +49,22 @@ class SocialHubScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider); // Watch user for auth state
 
     Future.microtask(() {
+      if (!context.mounted) return;
       final actions = <AppBarAction>[];
 
       if (user != null) {
+        if (user.role == UserRole.vendor) {
+          actions.add(
+            AppBarAction(
+              icon: FontAwesomeIcons.plus,
+              label: 'Add Post',
+              onPressed: () {
+                if (context.mounted) context.push('/social/create');
+              },
+            ),
+          );
+        }
         actions.addAll([
-          AppBarAction(
-            icon: FontAwesomeIcons.plus,
-            label: 'Add Post',
-            onPressed: () => context.push('/social/create'),
-          ),
           AppBarAction(
             icon: FontAwesomeIcons.users,
             label: 'My Vendors',
@@ -74,9 +82,11 @@ class SocialHubScreen extends ConsumerWidget {
             icon: FontAwesomeIcons.rightToBracket,
             label: 'Sign In',
             onPressed: () {
-              final location = GoRouterState.of(context).uri.toString();
-              final encodedLocation = Uri.encodeComponent(location);
-              context.push('/login?redirect=$encodedLocation');
+              if (context.mounted) {
+                final location = GoRouterState.of(context).uri.toString();
+                final encodedLocation = Uri.encodeComponent(location);
+                context.push('/login?redirect=$encodedLocation');
+              }
             },
           ),
         );
@@ -87,7 +97,7 @@ class SocialHubScreen extends ConsumerWidget {
           .read(appBarConfigProvider(location).notifier)
           .setConfig(
             AppBarConfig(
-              title: 'Social Hub',
+              title: 'SOCIAL HUB',
               isSearchEnabled: true,
               searchHint: 'Search posts, vendors...',
               actions: actions,
